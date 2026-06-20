@@ -28,13 +28,13 @@ def extract(
     images_dir: Path = typer.Option(
         "pdf_images",
         "--images-dir",
-        help="Carpeta donde guardar las imágenes extraídas (solo PDFs)"
+        help="Carpeta donde guardar las imágenes extraídas (solo para PDFs)"
     ),
 ):
     """
-    Extrae un documento a Markdown usando MarkItDown.
+    Extrae un documento a Markdown usando el extractor más adecuado.
     """
-    console.print(f"[bold blue]Procesando documento:[/bold blue] {document}")
+    console.print(f"[bold blue]Procesando:[/bold blue] {document}")
 
     try:
         struct = PdfStruct(images_output_dir=str(images_dir))
@@ -47,14 +47,16 @@ def extract(
         output.write_text(result.markdown, encoding="utf-8")
 
         console.print(f"[green]✓ Markdown guardado en:[/green] {output}")
-        console.print(f"[green]✓ Tipo de archivo:[/green] {result.metadata.get('file_type')}")
-        console.print(f"[green]✓ Es PDF:[/green] {result.metadata.get('is_pdf', False)}")
+        console.print(f"[green]✓ Extractor:[/green] {result.metadata.get('extractor', 'desconocido')}")
 
-        if result.images_dir:
-            console.print(f"[green]✓ Imágenes extraídas en:[/green] {result.images_dir}")
+        warnings = result.metadata.get("cross_validation_warnings", [])
+        if warnings:
+            console.print("[yellow]⚠ Advertencias de validación cruzada:[/yellow]")
+            for w in warnings:
+                console.print(f"  - {w}")
 
     except Exception as e:
-        console.print(f"[red]Error al procesar el documento:[/red] {e}")
+        console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(code=1)
 
 

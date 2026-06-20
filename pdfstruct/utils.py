@@ -54,3 +54,52 @@ def get_safe_output_path(
         return output_dir / f"{base_name}{suffix}"
     else:
         return input_path.with_suffix(suffix)
+
+
+# ---------------------------------------------------------------------------
+# Limpieza de artefactos de OCR / PyMuPDF4LLM
+# ---------------------------------------------------------------------------
+
+# Bloques de texto de imagen generados por OCR ruidoso.
+_PICTURE_BLOCK_RE = re.compile(
+    r"----- Start of picture text -----.*?----- End of picture text -----",
+    re.DOTALL | re.IGNORECASE,
+)
+
+# Marcadores de imagen omitida intencionalmente.
+_OMITTED_PICTURE_RE = re.compile(
+    r"\*\*==> picture \[\d+ x \d+\] intentionally omitted <==\*\*",
+    re.IGNORECASE,
+)
+
+# Saltos forzados de PyMuPDF4LLM que dejan basura.
+_BR_RUIDO_RE = re.compile(r"<br>\s*")
+
+
+def clean_ocr_garbage(markdown: str) -> str:
+    """
+    Limpia artefactos comunes generados por PyMuPDF4LLM + OCR:
+
+    - Bloques ``----- Start of picture text ----- ... ----- End of picture text -----``.
+    - Marcadores ``==> picture [W x H] intentionally omitted <==``.
+    - Ruido residual de saltos de línea ``<br>`` sueltos.
+
+    Args:
+        markdown: Markdown crudo devuelto por el extractor.
+
+    Returns:
+        Markdown limpio.
+    """
+    # 1. Quitar bloques de texto de imagen (incluyendo líneas con <br> internas).
+    text = _PICTURE_BLOCK_RE.sub("", markdown)
+
+    # 2. Quitar marcadores de imagen omitida.
+    text = _OMITTED_PICTURE_RE.sub("", text)
+
+    # 3. Compactar <br> sueltos en saltos de línea limpios.
+    text = _BR_RUIDO_RE.sub("\n", text)
+
+    # 4. Normalizar líneas vacías múltiples.
+    text = re.sub(r"\n{3,}", "\n\n", text)
+
+    return text.strip()

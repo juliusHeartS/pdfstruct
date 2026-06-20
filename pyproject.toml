@@ -1,14 +1,16 @@
 [project]
 name = "pdfstruct"
-version = "0.1.0"
-description = "Extractor de documentos a Markdown de alta calidad. Soporta cualquier formato de MarkItDown. En PDFs aplica lógica avanzada de imágenes, páginas y cruce de información."
+version = "0.2.0"
+description = "Extractor de documentos a Markdown de alta calidad. Soporta PDFs con PyMuPDF4LLM y otros formatos con MarkItDown. Incluye validación cruzada y enriquecimiento."
 authors = [{name = "Julio César + Grok"}]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "markitdown[all]>=0.1.0",
     "pymupdf>=1.24.0",
-    "typer>=0.12.0",
+    "pymupdf4llm>=0.0.5",   # Se recomienda instalar cuando esté disponible
+    "pdfplumber>=0.11.0",
+    "typer[all]>=0.12.0",
     "rich>=13.0.0",
 ]
 

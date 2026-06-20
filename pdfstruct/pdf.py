@@ -2,38 +2,37 @@
 pdfstruct/pdf.py
 
 Módulo especializado en el procesamiento de PDFs.
-Combina MarkItDown + PyMuPDF para obtener el mejor resultado posible
-(imágenes, páginas, tablas, etc.).
+Actúa como orquestador que combina extracción con PyMuPDF4LLM,
+validación cruzada y enriquecimiento.
 """
 
-from pathlib import Path
 import fitz
-
+from pathlib import Path
 from .core import ExtractionResult
+from .extractors.pymupdf4llm_extractor import PyMuPDF4LLMExtractor
 from .extractors.markitdown_extractor import MarkItDownExtractor
-from .enrichers.page_markers import add_page_markers
-from .enrichers.image_handler import extract_and_save_images, create_image_references
-from .enrichers.text_cleaner import clean_markdown
+from .enrichers.cross_validator import CrossValidator
+from .enrichers.image_classifier import classify_image
+from .enrichers.page_markers import add_page_markers, get_page_marker
 
 
 class PDFProcessor:
     """
     Procesador especializado para PDFs.
 
-    Combina:
-    - MarkItDownExtractor (Markdown base)
-    - PyMuPDF (imágenes, páginas, estructura)
+    Utiliza PyMuPDF4LLM como extractor principal, con soporte
+    para validación cruzada y clasificación de imágenes.
     """
 
     def __init__(self, images_output_dir: str = "pdf_images"):
-        self.markitdown = MarkItDownExtractor()
+        self.pymupdf_extractor = PyMuPDF4LLMExtractor()
+        self.markitdown_extractor = MarkItDownExtractor()
+        self.cross_validator = CrossValidator()
         self.images_output_dir = Path(images_output_dir)
 
     def extract(self, pdf_path: str | Path) -> ExtractionResult:
         """
-        Extrae un PDF combinando MarkItDown + PyMuPDF.
-
-        Abre el PDF una sola vez para evitar I/O redundante en producción.
+        Extrae un PDF utilizando PyMuPDF4LLM como extractor principal.
         """
         pdf_path = Path(pdf_path).resolve()
 
@@ -41,55 +40,102 @@ class PDFProcessor:
             raise FileNotFoundError(f"No se encontró el PDF: {pdf_path}")
 
         doc = fitz.open(str(pdf_path))
+        total_pages = len(doc)
+        doc.close()
+
+        # Enriquecimiento con marcadores de página
+        markdown_content = self._build_markdown_with_page_markers(pdf_path, total_pages)
+
+        # Limpieza de artefactos de OCR
+        from .utils import clean_ocr_garbage
+        markdown_content = clean_ocr_garbage(markdown_content)
+
+        # Validación cruzada (MarkItDown como referencia)
         try:
-            page_count = len(doc)
-            has_images = any(page.get_images() for page in doc)
-
-            # Markdown base con MarkItDown (MarkItDown abre el archivo por su cuenta)
-            markdown_content = self.markitdown.extract(pdf_path)
-
-            # Limpieza de texto: une líneas sueltas en párrafos, quita duplicados, etc.
-            try:
-                markdown_content = clean_markdown(markdown_content)
-            except Exception:
-                # Si falla la limpieza, seguimos con el markdown original
-                pass
-
-            # Marcadores de página usando el documento ya abierto
-            try:
-                markdown_content = add_page_markers(markdown_content, doc)
-            except Exception:
-                # Si falla el enriquecimiento de páginas, no rompemos la extracción
-                pass
-
-            # Imágenes
-            images_dir: Path | None = None
-            images_found = 0
-            saved_images: list[dict] = []
-            if has_images:
-                images_dir = self.images_output_dir / pdf_path.stem
-                saved_images = extract_and_save_images(
-                    pdf_path, images_dir, doc=doc
-                )
-                if saved_images:
-                    image_section = create_image_references(saved_images, images_dir)
-                    markdown_content = markdown_content + image_section
-                else:
-                    images_dir = None
-                images_found = len(saved_images)
-
-            metadata = {
-                "source_file": str(pdf_path),
-                "file_type": ".pdf",
-                "extractor": "markitdown + pymupdf",
-                "total_pages": page_count,
-                "images_found": images_found,
-            }
-
-            return ExtractionResult(
-                markdown=markdown_content,
-                images_dir=images_dir,
-                metadata=metadata,
+            secondary_markdown = self.markitdown_extractor.extract(pdf_path)
+            validation_result = self.cross_validator.validate(
+                primary_markdown=markdown_content,
+                secondary_markdown=secondary_markdown
             )
+        except Exception:
+            validation_result = None
+
+        images_found, images_dir = self._extract_images(pdf_path)
+
+        metadata = {
+            "source_file": str(pdf_path),
+            "file_type": ".pdf",
+            "extractor": "pymupdf4llm",
+            "is_pdf": True,
+            "total_pages": total_pages,
+            "images_found": images_found,
+        }
+
+        if images_dir is not None:
+            metadata["images_dir"] = str(images_dir)
+
+        if validation_result:
+            metadata["cross_validation_warnings"] = validation_result.warnings
+            metadata["cross_validation"] = validation_result.metadata
+
+        return ExtractionResult(
+            markdown=markdown_content,
+            images_dir=images_dir,
+            metadata=metadata
+        )
+
+    def _build_markdown_with_page_markers(self, pdf_path: Path, total_pages: int) -> str:
+        """
+        Extrae el PDF página por página e inserta un marcador <!-- PAGE: N / total -->
+        antes del contenido de cada página.
+        """
+        pages = self.pymupdf_extractor.extract_pages(pdf_path)
+        parts = []
+
+        for page_number, page_text in enumerate(pages, start=1):
+            marker = f"<!-- PAGE: {page_number} / {total_pages} -->"
+            if page_text.strip():
+                parts.append(f"{marker}\n\n{page_text.strip()}")
+            else:
+                parts.append(marker)
+
+        return "\n\n".join(parts)
+
+    def _extract_images(self, pdf_path: Path) -> tuple[int, Path | None]:
+        """
+        Extrae imágenes del PDF si superan un umbral de tamaño.
+
+        Returns:
+            (cantidad de imágenes encontradas, directorio de imágenes o None).
+        """
+        images_dir = self.images_output_dir / pdf_path.stem
+        images_dir.mkdir(parents=True, exist_ok=True)
+
+        doc = fitz.open(str(pdf_path))
+        images_found = 0
+
+        try:
+            for page_index in range(len(doc)):
+                page = doc.load_page(page_index)
+                image_list = page.get_images(full=True)
+
+                for img_index, img in enumerate(image_list, start=1):
+                    xref = img[0]
+                    base_image = doc.extract_image(xref)
+                    image_bytes = base_image["image"]
+
+                    if len(image_bytes) < 2048:
+                        continue
+
+                    ext = base_image["ext"]
+                    image_filename = f"page_{page_index + 1}_img_{img_index}.{ext}"
+                    image_path = images_dir / image_filename
+                    image_path.write_bytes(image_bytes)
+                    images_found += 1
         finally:
             doc.close()
+
+        if images_found == 0:
+            return 0, None
+
+        return images_found, images_dir

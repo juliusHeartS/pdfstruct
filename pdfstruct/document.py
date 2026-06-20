@@ -1,24 +1,20 @@
 """
 pdfstruct/document.py
 
-Módulo base para manejo general de documentos.
-Actualmente es una capa delgada. Sirve como punto de extensión
-para lógica común entre diferentes tipos de documentos.
+Procesador para documentos que no son PDF (DOCX, XLSX, PPTX, etc.).
+Utiliza MarkItDownExtractor como motor principal.
 """
 
 from pathlib import Path
-from typing import Optional
 from .core import ExtractionResult
 from .extractors.markitdown_extractor import MarkItDownExtractor
 
 
 class DocumentProcessor:
     """
-    Procesador genérico de documentos (no PDF).
+    Procesador para documentos que no son PDF.
 
-    Por ahora simplemente usa MarkItDownExtractor.
-    En el futuro puede contener lógica común (limpieza de texto,
-    normalización, metadata estándar, etc.).
+    Actualmente utiliza MarkItDown como extractor principal.
     """
 
     def __init__(self):
@@ -26,7 +22,7 @@ class DocumentProcessor:
 
     def extract(self, document_path: str | Path) -> ExtractionResult:
         """
-        Extrae un documento genérico (DOCX, PPTX, XLSX, HTML, etc.).
+        Extrae un documento que no es PDF y devuelve el resultado.
         """
         document_path = Path(document_path).resolve()
 
@@ -39,10 +35,10 @@ class DocumentProcessor:
             "source_file": str(document_path),
             "file_type": document_path.suffix.lower(),
             "extractor": "markitdown",
-            "is_pdf": False,
         }
 
+        from .core import ExtractionResult
         return ExtractionResult(
             markdown=markdown_content,
-            metadata=metadata,
+            metadata=metadata
         )

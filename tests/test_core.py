@@ -46,8 +46,7 @@ def test_extract_pdf(tmp_path: Path):
 
     assert result.metadata["is_pdf"] is True
     assert result.metadata["total_pages"] == 2
-    assert "<!-- PAGE: 1 -->" in result.markdown
-    assert "<!-- PAGE: 2 -->" in result.markdown
+    assert "<!-- PAGE: 1 / 2 -->" in result.markdown
 
 
 def test_extract_pdf_with_images(tmp_path: Path):

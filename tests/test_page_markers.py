@@ -29,5 +29,4 @@ def test_add_page_markers(tmp_path: Path):
     markdown = "# Introducción\n\nPágina uno del documento\n\n## Siguiente\n\nPágina dos del documento"
     enriched = add_page_markers(markdown, pdf_path)
 
-    assert "<!-- PAGE: 1 -->" in enriched
-    assert "<!-- PAGE: 2 -->" in enriched
+    assert "<!-- PAGE: 1 / 2 -->" in enriched

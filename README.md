@@ -1,16 +1,18 @@
 # pdfstruct
 
-Extractor de documentos a Markdown de alta calidad.
+**Extractor de documentos a Markdown de alta calidad**, especialmente diseñado para PDFs complejos y documentos institucionales.
 
-## Características actuales
+El objetivo de `pdfstruct` es generar Markdown limpio, bien estructurado y rico en contexto, listo para ser utilizado en sistemas RAG, bases de datos vectoriales o pipelines de procesamiento de documentos.
 
-- Soporta cualquier documento compatible con **MarkItDown** (PDF, DOCX, PPTX, XLSX, etc.).
-- Para **PDFs** combina MarkItDown + PyMuPDF:
-  - Markdown de buena calidad
-  - Marcadores de página (`<!-- PAGE: X -->`)
-  - Extracción y guardado de imágenes embebidas
-  - Sección de referencias de imágenes al final del Markdown
-- API simple y CLI funcional.
+## Características principales
+
+- **Extracción de PDFs** utilizando **PyMuPDF4LLM** como motor principal (mejor soporte para layouts de dos columnas, tablas y orden de lectura).
+- Soporte para **otros formatos** (DOCX, XLSX, PPTX, etc.) mediante MarkItDown.
+- **Validación cruzada ligera** entre extractores para detectar posibles omisiones o problemas de extracción.
+- Clasificación básica de imágenes (decorativas vs. imágenes con datos).
+- Inserción de marcadores de página (`<!-- PAGE: X -->`).
+- Arquitectura modular y extensible.
+- Interfaz de línea de comandos (CLI) funcional.
 
 ## Instalación
 
@@ -19,58 +21,73 @@ cd pdfstruct
 pip install -e .
 ```
 
-## Uso como biblioteca
+> **Nota:** Se recomienda tener instalada la librería `pymupdf4llm` para obtener el mejor rendimiento en PDFs.
+
+## Uso
+
+### Como biblioteca de Python
 
 ```python
 from pdfstruct import PdfStruct
 
-struct = PdfStruct()
+# Inicializar
+struct = PdfStruct(images_output_dir="imagenes_extraidas")
 
-# Extraer cualquier documento
-result = struct.extract("mi_documento.pdf")
+# Extraer un PDF
+result = struct.extract("informe_anual.pdf")
 
 print(result.markdown)           # Markdown generado
-print(result.metadata)           # Metadata (páginas, imágenes, etc.)
+print(result.metadata)           # Metadata (extractor usado, warnings, etc.)
+
+# Guardar directamente en archivo
+output_path = struct.extract_to_file("informe_anual.pdf", output_path="salida.md")
 ```
 
-## Uso como CLI
+### Como herramienta de línea de comandos
 
 ```bash
 # Extracción básica
-pdfstruct extract mi_documento.pdf -o salida.md
+pdfstruct extract documento.pdf
 
-# Controlar directorio de imágenes
-pdfstruct extract mi_documento.pdf --images-dir mis_imagenes
+# Especificar archivo de salida y carpeta de imágenes
+pdfstruct extract documento.pdf -o salida.md --images-dir imagenes_pdf
 ```
 
-## Estructura del proyecto
+## Arquitectura
 
 ```
-pdfstruct/
-├── pdfstruct/
-│   ├── __init__.py
-│   ├── core.py
-│   ├── document.py              # Procesador genérico para documentos
-│   ├── pdf.py                   # Procesador especializado para PDFs
-│   ├── cli.py
-│   ├── extractors/
-│   │   ├── markitdown_extractor.py
-│   │   └── pymupdf_extractor.py
-│   └── enrichers/
-│       ├── page_markers.py
-│       └── image_handler.py
+PdfStruct
+├── PDFProcessor (para PDFs)
+│   ├── PyMuPDF4LLMExtractor (principal)
+│   ├── MarkItDownExtractor (fallback)
+│   ├── CrossValidator (validación cruzada)
+│   └── ImageClassifier + PageMarkers (enriquecimiento)
+│
+└── DocumentProcessor (para DOCX, XLSX, PPTX, etc.)
+    └── MarkItDownExtractor
 ```
 
-## Estado actual (junio 2026)
+## Estado actual del proyecto
 
-El extractor ya es funcional:
-- Documentos generales → MarkItDown
-- PDFs → MarkItDown + PyMuPDF (imágenes + páginas + referencias)
+El proyecto se encuentra en fase de desarrollo activo. Actualmente cuenta con:
 
-Próximos pasos planeados:
-- Mejorar inserción de descripciones de imágenes (especialmente gráficos estadísticos)
-- Mejor manejo de tablas complejas
-- Soporte más avanzado de marcadores de página por sección
+- Extracción funcional de PDFs usando PyMuPDF4LLM.
+- Soporte para documentos que no son PDF.
+- Validación cruzada básica (reporta warnings).
+- Clasificación simple de imágenes.
+- CLI operativa.
+
+**Próximos pasos planeados:**
+- Mejorar la detección y clasificación de imágenes con datos.
+- Fortalecer el `CrossValidator` con más reglas de validación.
+- Mejorar el manejo de tablas complejas.
+- Agregar soporte para descripciones de imágenes (OCR selectivo).
+
+## Cuándo usar pdfstruct
+
+- Cuando necesitas extraer PDFs con layouts complejos (dos columnas, tablas, gráficos).
+- Cuando quieres un Markdown más limpio y estructurado que el que entrega MarkItDown por defecto en PDFs.
+- Cuando estás construyendo un pipeline RAG y necesitas buena calidad de extracción + trazabilidad (páginas, imágenes).
 
 ## Licencia
 

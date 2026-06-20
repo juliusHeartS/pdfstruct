@@ -2,8 +2,8 @@
 pdfstruct/extractors/markitdown_extractor.py
 
 Extractor basado en MarkItDown.
-Este módulo encapsula la lógica de extracción usando MarkItDown
-para que sea fácil de reemplazar o complementar en el futuro.
+Se utiliza principalmente para documentos que no son PDF
+y como extractor de fallback.
 """
 
 from pathlib import Path
@@ -29,5 +29,9 @@ class MarkItDownExtractor:
             Contenido en formato Markdown.
         """
         document_path = Path(document_path)
+
+        if not document_path.exists():
+            raise FileNotFoundError(f"No se encontró el documento: {document_path}")
+
         result = self.md.convert(str(document_path))
         return result.text_content

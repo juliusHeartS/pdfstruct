@@ -8,5 +8,5 @@ En PDFs puede activar lógica avanzada (imágenes con PyMuPDF, páginas, etc.).
 
 from .core import PdfStruct
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = ["PdfStruct"]
