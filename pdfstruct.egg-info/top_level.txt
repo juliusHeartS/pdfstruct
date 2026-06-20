@@ -1,4 +1,0 @@
-paho_pdfs
-pdfstruct
-resultados
-tests

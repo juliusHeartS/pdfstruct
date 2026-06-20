@@ -103,3 +103,55 @@ def clean_ocr_garbage(markdown: str) -> str:
     text = re.sub(r"\n{3,}", "\n\n", text)
 
     return text.strip()
+
+
+# ---------------------------------------------------------------------------
+# Normalización de texto: reemplazos de carácter y espacios
+# ---------------------------------------------------------------------------
+
+# Caracteres de control C0 excepto tab, newline y carriage return.
+_CONTROL_CHARS = set(chr(o) for o in range(0x20) if o not in (9, 10, 13))
+# Espacios y separadores invisibles de Unicode que suelen confundir a los extractores.
+_WEIRD_SPACES = {
+    '\u00a0', '\u2000', '\u2001', '\u2002', '\u2003', '\u2004',
+    '\u2005', '\u2006', '\u2007', '\u2008', '\u2009', '\u200a',
+    '\u200b', '\u200c', '\u200d', '\u200e', '\u200f', '\u2028',
+    '\u2029', '\u202f', '\u205f', '\u2060', '\ufeff',
+}
+_REPLACEMENT_CHAR = '\ufffd'
+
+
+def normalize_text(text: str) -> str:
+    """
+    Normaliza texto extraído de PDFs:
+
+    - Reemplaza caracteres de control por espacios.
+    - Reemplaza espacios "raros" de Unicode por espacio normal.
+    - Reemplaza ``\ufffd`` (carácter de reemplazo) por espacio.
+    - Compacta espacios múltiples.
+    - Normaliza espacios alrededor de puntuación simple (``,``, ``.``, ``;``, ``:``, ``?``, ``!``).
+
+    Args:
+        text: Texto a normalizar.
+
+    Returns:
+        Texto normalizado.
+    """
+    chars = []
+    for c in text:
+        if c in _CONTROL_CHARS or c in _WEIRD_SPACES or c == _REPLACEMENT_CHAR:
+            chars.append(' ')
+        else:
+            chars.append(c)
+    result = ''.join(chars)
+
+    # Compactar espacios múltiples.
+    result = re.sub(r' +', ' ', result)
+    # Normalizar espacio antes de signos de puntuación occidentales.
+    result = re.sub(r'\s+([.,;:?!)])', r'\1', result)
+    # Normalizar espacio después de signo de apertura.
+    result = re.sub(r'([(])\s+', r'\1', result)
+    # Compactar líneas vacías múltiples.
+    result = re.sub(r'\n{3,}', '\n\n', result)
+
+    return result.strip()

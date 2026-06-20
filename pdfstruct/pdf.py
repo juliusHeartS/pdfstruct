@@ -12,8 +12,8 @@ from .core import ExtractionResult
 from .extractors.pymupdf4llm_extractor import PyMuPDF4LLMExtractor
 from .extractors.markitdown_extractor import MarkItDownExtractor
 from .enrichers.cross_validator import CrossValidator
-from .enrichers.image_classifier import classify_image
-from .enrichers.page_markers import add_page_markers, get_page_marker
+from .enrichers.table_post_processor import TablePostProcessor
+from .utils import clean_ocr_garbage, normalize_text
 
 
 class PDFProcessor:
@@ -21,13 +21,14 @@ class PDFProcessor:
     Procesador especializado para PDFs.
 
     Utiliza PyMuPDF4LLM como extractor principal, con soporte
-    para validación cruzada y clasificación de imágenes.
+    para validación cruzada y reparación de tablas.
     """
 
     def __init__(self, images_output_dir: str = "pdf_images"):
         self.pymupdf_extractor = PyMuPDF4LLMExtractor()
         self.markitdown_extractor = MarkItDownExtractor()
         self.cross_validator = CrossValidator()
+        self.table_post_processor = TablePostProcessor()
         self.images_output_dir = Path(images_output_dir)
 
     def extract(self, pdf_path: str | Path) -> ExtractionResult:
@@ -43,12 +44,17 @@ class PDFProcessor:
         total_pages = len(doc)
         doc.close()
 
-        # Enriquecimiento con marcadores de página
+        # Extracción principal con marcadores de página
         markdown_content = self._build_markdown_with_page_markers(pdf_path, total_pages)
 
         # Limpieza de artefactos de OCR
-        from .utils import clean_ocr_garbage
         markdown_content = clean_ocr_garbage(markdown_content)
+
+        # Normalización de texto
+        markdown_content = normalize_text(markdown_content)
+
+        # Reparación conservadora de tablas
+        markdown_content = self.table_post_processor.process(markdown_content)
 
         # Validación cruzada (MarkItDown como referencia)
         try:

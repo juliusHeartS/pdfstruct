@@ -1,0 +1,21 @@
+# Entornos virtuales
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+
+# Resultados locales de pruebas
+resultados/
+resultados2/
+resultados2_before/
+
+# macOS
+.DS_Store
+
+# Archivos temporales
+*.tmp
+*.log
