@@ -1,0 +1,862 @@
+[
+  {
+    "page": 30,
+    "image": "doc_03_page_030.png",
+    "elapsed_seconds": 0.213,
+    "target_detections": [
+      {
+        "label": "Table",
+        "confidence": 0.9996286630630493,
+        "box": [
+          183,
+          836,
+          484,
+          888
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9996942281723022,
+        "box": [
+          567,
+          888,
+          1201,
+          941
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9996570348739624,
+        "box": [
+          567,
+          972,
+          935,
+          1025
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9995761513710022,
+        "box": [
+          567,
+          1056,
+          987,
+          1108
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.999090313911438,
+        "box": [
+          183,
+          1137,
+          404,
+          1185
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9996351003646851,
+        "box": [
+          567,
+          1348,
+          1118,
+          1401
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9995297193527222,
+        "box": [
+          567,
+          1485,
+          1167,
+          1568
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9993972778320312,
+        "box": [
+          567,
+          1597,
+          911,
+          1650
+        ]
+      }
+    ]
+  },
+  {
+    "page": 34,
+    "image": "doc_03_page_034.png",
+    "elapsed_seconds": 0.178,
+    "target_detections": [
+      {
+        "label": "Table",
+        "confidence": 0.9997803568840027,
+        "box": [
+          632,
+          602,
+          800,
+          752
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9997947812080383,
+        "box": [
+          1188,
+          602,
+          1329,
+          690
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9997904896736145,
+        "box": [
+          827,
+          605,
+          977,
+          752
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9997864365577698,
+        "box": [
+          1001,
+          605,
+          1166,
+          752
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9998026490211487,
+        "box": [
+          1360,
+          605,
+          1509,
+          752
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9998331069946289,
+        "box": [
+          183,
+          853,
+          312,
+          932
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9998313188552856,
+        "box": [
+          365,
+          853,
+          586,
+          904
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9998412132263184,
+        "box": [
+          365,
+          937,
+          493,
+          990
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9998500347137451,
+        "box": [
+          365,
+          1020,
+          603,
+          1073
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9998472929000854,
+        "box": [
+          363,
+          1102,
+          552,
+          1152
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9998533725738525,
+        "box": [
+          363,
+          1185,
+          595,
+          1269
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9997974038124084,
+        "box": [
+          183,
+          1705,
+          566,
+          1850
+        ]
+      }
+    ]
+  },
+  {
+    "page": 35,
+    "image": "doc_03_page_035.png",
+    "elapsed_seconds": 0.224,
+    "target_detections": [
+      {
+        "label": "Table",
+        "confidence": 0.9995403289794922,
+        "box": [
+          632,
+          332,
+          800,
+          484
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9995598196983337,
+        "box": [
+          1188,
+          332,
+          1507,
+          481
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9996084570884705,
+        "box": [
+          1001,
+          336,
+          1166,
+          481
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9995625615119934,
+        "box": [
+          1360,
+          336,
+          1509,
+          385
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9997565150260925,
+        "box": [
+          178,
+          580,
+          323,
+          693
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.999761164188385,
+        "box": [
+          365,
+          583,
+          596,
+          638
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9997420907020569,
+        "box": [
+          183,
+          732,
+          329,
+          785
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9997606873512268,
+        "box": [
+          363,
+          732,
+          586,
+          785
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9997631907463074,
+        "box": [
+          363,
+          816,
+          581,
+          864
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9997393488883972,
+        "box": [
+          183,
+          906,
+          336,
+          965
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9997499585151672,
+        "box": [
+          363,
+          906,
+          595,
+          1051
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9997656941413879,
+        "box": [
+          363,
+          1078,
+          576,
+          1130
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9997592568397522,
+        "box": [
+          363,
+          1161,
+          498,
+          1249
+        ]
+      }
+    ]
+  },
+  {
+    "page": 36,
+    "image": "doc_03_page_036.png",
+    "elapsed_seconds": 0.229,
+    "target_detections": [
+      {
+        "label": "Table",
+        "confidence": 0.9998321533203125,
+        "box": [
+          183,
+          1194,
+          360,
+          1243
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9998458623886108,
+        "box": [
+          394,
+          1194,
+          646,
+          1243
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9998520612716675,
+        "box": [
+          394,
+          1331,
+          589,
+          1386
+        ]
+      },
+      {
+        "label": "Table",
+        "confidence": 0.9998315572738647,
+        "box": [
+          394,
+          1471,
+          676,
+          1555
+        ]
+      }
+    ]
+  },
+  {
+    "page": 41,
+    "image": "doc_03_page_041.png",
+    "elapsed_seconds": 0.225,
+    "target_detections": [
+      {
+        "label": "Picture",
+        "confidence": 0.9992905855178833,
+        "box": [
+          877,
+          312,
+          1448,
+          424
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9994590878486633,
+        "box": [
+          317,
+          723,
+          654,
+          827
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9993208646774292,
+        "box": [
+          884,
+          1234,
+          1455,
+          1348
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9994237422943115,
+        "box": [
+          176,
+          1243,
+          520,
+          1841
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.99943608045578,
+        "box": [
+          520,
+          1526,
+          1380,
+          1845
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9994214773178101,
+        "box": [
+          912,
+          1537,
+          1150,
+          1667
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9994609951972961,
+        "box": [
+          1120,
+          1553,
+          1451,
+          1689
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9994049072265625,
+        "box": [
+          657,
+          1625,
+          805,
+          1672
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9994562268257141,
+        "box": [
+          491,
+          1632,
+          688,
+          1702
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9994134902954102,
+        "box": [
+          340,
+          1634,
+          557,
+          1696
+        ]
+      }
+    ]
+  },
+  {
+    "page": 43,
+    "image": "doc_03_page_043.png",
+    "elapsed_seconds": 0.21,
+    "target_detections": [
+      {
+        "label": "Picture",
+        "confidence": 0.9994170665740967,
+        "box": [
+          884,
+          308,
+          1453,
+          422
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9995195865631104,
+        "box": [
+          877,
+          605,
+          1439,
+          860
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9995050430297852,
+        "box": [
+          1122,
+          622,
+          1213,
+          671
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9994269609451294,
+        "box": [
+          826,
+          1331,
+          1414,
+          1445
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9993997812271118,
+        "box": [
+          770,
+          1333,
+          897,
+          1412
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9995805621147156,
+        "box": [
+          691,
+          1650,
+          1082,
+          1940
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9995678067207336,
+        "box": [
+          1048,
+          1665,
+          1317,
+          1806
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9995869994163513,
+        "box": [
+          374,
+          1727,
+          771,
+          1876
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9995699524879456,
+        "box": [
+          1264,
+          1727,
+          1411,
+          1775
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9995835423469543,
+        "box": [
+          195,
+          1729,
+          510,
+          1905
+        ]
+      }
+    ]
+  },
+  {
+    "page": 44,
+    "image": "doc_03_page_044.png",
+    "elapsed_seconds": 0.215,
+    "target_detections": [
+      {
+        "label": "Picture",
+        "confidence": 0.9991191029548645,
+        "box": [
+          176,
+          455,
+          265,
+          673
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9985424280166626,
+        "box": [
+          799,
+          490,
+          1445,
+          602
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9993745684623718,
+        "box": [
+          499,
+          697,
+          863,
+          880
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.999390721321106,
+        "box": [
+          193,
+          715,
+          399,
+          983
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9993647933006287,
+        "box": [
+          819,
+          759,
+          1054,
+          875
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9994468092918396,
+        "box": [
+          1077,
+          785,
+          1320,
+          952
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9993948936462402,
+        "box": [
+          346,
+          805,
+          433,
+          851
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9993864297866821,
+        "box": [
+          955,
+          805,
+          1088,
+          858
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9993102550506592,
+        "box": [
+          1283,
+          805,
+          1385,
+          860
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9985564351081848,
+        "box": [
+          867,
+          1421,
+          1438,
+          1540
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9991520643234253,
+        "box": [
+          411,
+          1489,
+          819,
+          1898
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9990955591201782,
+        "box": [
+          1016,
+          1828,
+          1434,
+          1894
+        ]
+      }
+    ]
+  },
+  {
+    "page": 50,
+    "image": "doc_03_page_050.png",
+    "elapsed_seconds": 0.116,
+    "target_detections": [
+      {
+        "label": "Picture",
+        "confidence": 0.9971517324447632,
+        "box": [
+          360,
+          277,
+          467,
+          367
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9972795844078064,
+        "box": [
+          232,
+          453,
+          469,
+          994
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9907063841819763,
+        "box": [
+          795,
+          1128,
+          1145,
+          1190
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9871093034744263,
+        "box": [
+          1115,
+          1128,
+          1283,
+          1190
+        ]
+      }
+    ]
+  },
+  {
+    "page": 54,
+    "image": "doc_03_page_054.png",
+    "elapsed_seconds": 0.137,
+    "target_detections": [
+      {
+        "label": "Picture",
+        "confidence": 0.999257504940033,
+        "box": [
+          1173,
+          866,
+          1302,
+          910
+        ]
+      }
+    ]
+  },
+  {
+    "page": 56,
+    "image": "doc_03_page_056.png",
+    "elapsed_seconds": 0.166,
+    "target_detections": [
+      {
+        "label": "Picture",
+        "confidence": 0.9993313550949097,
+        "box": [
+          229,
+          277,
+          336,
+          530
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.999240517616272,
+        "box": [
+          821,
+          312,
+          1144,
+          424
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9988555908203125,
+        "box": [
+          746,
+          1289,
+          1390,
+          1401
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9992971420288086,
+        "box": [
+          674,
+          1654,
+          797,
+          1775
+        ]
+      },
+      {
+        "label": "Picture",
+        "confidence": 0.9992979764938354,
+        "box": [
+          462,
+          1705,
+          639,
+          1775
+        ]
+      }
+    ]
+  }
+]
