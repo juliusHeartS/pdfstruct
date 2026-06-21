@@ -7,12 +7,15 @@ El objetivo de `pdfstruct` es generar Markdown limpio, bien estructurado y rico 
 ## Características principales
 
 - **Extracción de PDFs** utilizando **PyMuPDF4LLM** como motor principal (mejor soporte para layouts de dos columnas, tablas y orden de lectura).
-- **GLM-OCR via Ollama** (opcional) para OCR de página completa, especialmente útil para tablas complejas y PDFs nativos donde PyMuPDF4LLM puede perder o fragmentar contenido.
+- **Modos `soft` y `hard`**:
+  - `soft` (default): extracción rápida sin OCR enrichment.
+  - `hard`: extracción con GLM-OCR via Ollama para mayor precisión en tablas y figuras.
 - **Configuración visible** mediante `pdfstruct.yaml` y variables de entorno `PDFSTRUCT_*`.
 - Soporte para **otros formatos** (DOCX, XLSX, PPTX, etc.) mediante MarkItDown.
 - **Validación cruzada ligera** entre extractores para detectar posibles omisiones o problemas de extracción (se omite cuando GLM-OCR está activo para evitar OCR doble).
 - Inserción de marcadores de página (`<!-- PAGE: X / TOTAL -->`).
 - Referencias relativas de imágenes cuando se especifica `output_path`.
+- Retroalimentación de progreso opcional para operaciones largas.
 - Arquitectura modular y extensible.
 - Interfaz de línea de comandos (CLI) funcional.
 
@@ -47,15 +50,25 @@ output_path = struct.extract_to_file("informe_anual.pdf", output_path="salida.md
 result = struct.extract("libro_grueso.pdf", max_pages=5)
 ```
 
-### Con GLM-OCR (Ollama)
+### Modo `hard` (GLM-OCR via Ollama)
 
 ```python
 from pdfstruct import PdfStruct
-from pdfstruct.config import GlmOcrConfig
 
-config = GlmOcrConfig(enabled=True, url="http://localhost:11434", model="glm-ocr:latest")
-struct = PdfStruct(images_output_dir="imagenes_extraidas", glm_ocr_config=config)
+# Mayor precisión, requiere Ollama
+struct = PdfStruct(mode="hard", images_output_dir="imagenes_extraidas")
 result = struct.extract("informe_anual.pdf", output_path="salida.md")
+
+# Con callback de progreso
+
+def on_progress(stage, current, total):
+    print(f"{stage}: {current}/{total}")
+
+result = struct.extract(
+    "informe_anual.pdf",
+    output_path="salida.md",
+    progress_callback=on_progress,
+)
 ```
 
 ### Configuración persistente (`pdfstruct.yaml`)
@@ -78,17 +91,20 @@ pasando argumentos o variables de entorno.
 ### Como herramienta de línea de comandos
 
 ```bash
-# Extracción básica
+# Extracción básica (modo soft, default)
 pdfstruct documento.pdf
 
 # Especificar archivo de salida y carpeta de imágenes
 pdfstruct documento.pdf -o salida.md --images-dir imagenes_pdf
 
-# Activar GLM-OCR via Ollama
-pdfstruct documento.pdf -o salida.md --images-dir imagenes_pdf --glm-ocr-enabled true
+# Modo hard con GLM-OCR (requiere Ollama)
+pdfstruct documento.pdf -o salida.md --images-dir imagenes_pdf --mode hard
+
+# Modo hard con barra de progreso
+pdfstruct documento.pdf -o salida.md --mode hard --progress
 
 # Usar otro modelo de Ollama
-pdfstruct documento.pdf --glm-ocr-enabled true --glm-ocr-model glm-ocr:q8_0
+pdfstruct documento.pdf --mode hard --glm-ocr-model glm-ocr:q8_0
 ```
 
 ## Configuración de GLM-OCR

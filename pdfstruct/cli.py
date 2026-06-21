@@ -4,12 +4,15 @@ pdfstruct/cli.py
 Interfaz de línea de comandos para pdfstruct.
 """
 
-import typer
 from pathlib import Path
+from typing import Optional
+
+import typer
 from rich.console import Console
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
 from .config import GlmOcrConfig
-from .core import PdfStruct
+from .core import PdfStruct, ProgressCallback
 
 app = typer.Typer(
     help="pdfstruct - Extractor de documentos a Markdown de alta calidad",
@@ -21,6 +24,17 @@ console = Console()
 def _bool_option(value: str) -> bool:
     """Convierte una cadena de opción booleana a bool."""
     return value.lower() in ("1", "true", "yes", "on")
+
+
+def _make_progress_callback(progress: Progress, task_id: int) -> ProgressCallback:
+    """Crea un callback que actualiza una tarea de rich Progress."""
+
+    def callback(stage: str, current: int, total: int) -> None:
+        if total is not None and progress.tasks[task_id].total != total:
+            progress.update(task_id, total=total)
+        progress.update(task_id, completed=current)
+
+    return callback
 
 
 @app.command(name="extract")
@@ -35,6 +49,16 @@ def extract(
         "pdf_images",
         "--images-dir",
         help="Carpeta donde guardar las imágenes extraídas (solo para PDFs)",
+    ),
+    mode: str = typer.Option(
+        "soft",
+        "--mode",
+        help="Modo de extracción: 'soft' (rápido, sin OCR) o 'hard' (GLM-OCR)",
+    ),
+    progress_flag: bool = typer.Option(
+        False,
+        "--progress",
+        help="Muestra una barra de progreso durante el procesamiento",
     ),
     glm_ocr_enabled: str = typer.Option(
         "false",
@@ -54,10 +78,23 @@ def extract(
     """
     Extrae un documento a Markdown usando el extractor más adecuado.
     """
+    if mode not in ("soft", "hard"):
+        console.print(
+            f"[red]Error:[/red] --mode debe ser 'soft' o 'hard', se recibió '{mode}'"
+        )
+        raise typer.Exit(code=1)
+
     console.print(f"[bold blue]Procesando:[/bold blue] {document}")
+    console.print(f"[bold blue]Modo:[/bold blue] {mode}")
+
+    enabled = _bool_option(glm_ocr_enabled)
+    if mode == "hard":
+        enabled = True
+    elif mode == "soft":
+        enabled = False
 
     glm_ocr_config = GlmOcrConfig.from_settings(
-        enabled=_bool_option(glm_ocr_enabled),
+        enabled=enabled,
         url=glm_ocr_url,
         model=glm_ocr_model,
         timeout=glm_ocr_timeout,
@@ -74,7 +111,27 @@ def extract(
             output = document.with_suffix(".structured.md")
 
         output = Path(output)
-        result = struct.extract(document, output_path=output)
+
+        progress_callback: Optional[ProgressCallback] = None
+        if progress_flag and mode == "hard":
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                TextColumn("({task.completed}/{task.total} páginas)"),
+                console=console,
+                transient=False,
+            ) as progress:
+                task_id = progress.add_task(
+                    "GLM-OCR en progreso...", total=None, start=True
+                )
+                progress_callback = _make_progress_callback(progress, task_id)
+                result = struct.extract(
+                    document, output_path=output, progress_callback=progress_callback
+                )
+        else:
+            result = struct.extract(document, output_path=output)
 
         output.write_text(result.markdown, encoding="utf-8")
 

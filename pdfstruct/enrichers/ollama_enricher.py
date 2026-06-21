@@ -12,14 +12,14 @@ Markdown con markdownify.
 
 from __future__ import annotations
 
-import fitz
 import logging
+import os
 import re
 import tempfile
-import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
+import fitz
 from markdownify import markdownify as md
 
 from ..config import GlmOcrConfig
@@ -28,6 +28,8 @@ from ..extractors.ollama_glm_ocr_client import OllamaGlmOcrClient
 from ..utils import ensure_dir
 
 logger = logging.getLogger(__name__)
+
+ProgressCallback = Callable[[str, int, int], None]
 
 
 # Placeholder que PyMuPDF4LLM usa para imágenes omitidas.
@@ -118,6 +120,7 @@ class OllamaEnricher:
         images_dir: Path,
         output_dir: Path | None = None,
         filename_prefix: str = "doc",
+        progress_callback: ProgressCallback | None = None,
     ) -> tuple[str, int, int]:
         """
         Enriquece los chunks de página con Ollama.
@@ -129,6 +132,7 @@ class OllamaEnricher:
             output_dir: Directorio donde se guardará el Markdown. Si se
                 proporciona, las referencias a imágenes serán relativas a él.
             filename_prefix: Prefijo para nombres de archivo.
+            progress_callback: Función opcional ``(stage, current, total)``.
 
         Returns:
             (markdown_enriquecido, paginas_procesadas, figuras_procesadas)
@@ -141,6 +145,10 @@ class OllamaEnricher:
         processed_pages = 0
         processed_figures = 0
         enriched_parts: list[str] = []
+
+        def _notify(current: int) -> None:
+            if progress_callback is not None:
+                progress_callback("glm_ocr_page", current, total_pages)
 
         try:
             for chunk in page_chunks:
@@ -171,6 +179,15 @@ class OllamaEnricher:
                 else:
                     enriched_parts.append(marker)
                 processed_pages += 1
+
+                _notify(processed_pages)
+                # Retroalimentación de progreso periódica por logging.
+                if processed_pages == 1 or processed_pages % 5 == 0:
+                    logger.info(
+                        "GLM-OCR progreso: %d/%d páginas procesadas",
+                        processed_pages,
+                        total_pages,
+                    )
         finally:
             doc.close()
 

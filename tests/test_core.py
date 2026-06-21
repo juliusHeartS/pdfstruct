@@ -96,3 +96,50 @@ def test_extract_pdf_with_glm_ocr_requires_ollama(tmp_path: Path):
         assert False, "Debería haber lanzado ConfigurationError"
     except ConfigurationError as exc:
         assert "Ollama no responde" in str(exc)
+
+
+def test_mode_soft_disables_glm_ocr(tmp_path: Path):
+    pdf_path = tmp_path / "test.pdf"
+    _create_test_pdf(pdf_path, num_pages=1)
+
+    # Aunque YAML diga enabled=true, mode="soft" lo desactiva.
+    struct = PdfStruct(
+        images_output_dir=str(tmp_path / "images"),
+        mode="soft",
+    )
+    result = struct.extract(pdf_path)
+
+    assert result.metadata["glm_ocr_enabled"] is False
+
+
+def test_mode_hard_requires_ollama(tmp_path: Path):
+    pdf_path = tmp_path / "test.pdf"
+    _create_test_pdf(pdf_path, num_pages=1)
+
+    try:
+        PdfStruct(
+            images_output_dir=str(tmp_path / "images"),
+            mode="hard",
+            glm_ocr_config=GlmOcrConfig(enabled=True, url="http://localhost:99999"),
+        )
+        assert False, "Debería haber lanzado ConfigurationError"
+    except ConfigurationError as exc:
+        assert "Ollama no responde" in str(exc)
+
+
+def test_progress_callback_is_called(tmp_path: Path):
+    pdf_path = tmp_path / "test.pdf"
+    _create_test_pdf(pdf_path, num_pages=2)
+
+    progress_calls: list[tuple[str, int, int]] = []
+
+    def callback(stage: str, current: int, total: int) -> None:
+        progress_calls.append((stage, current, total))
+
+    struct = PdfStruct(images_output_dir=str(tmp_path / "images"))
+    result = struct.extract(pdf_path, progress_callback=callback)
+
+    assert result.metadata["total_pages"] == 2
+    # El callback solo se invoca en modo GLM-OCR; en modo soft no hay
+    # notificaciones de progreso por página.
+    assert len(progress_calls) == 0

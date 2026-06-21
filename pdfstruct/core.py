@@ -8,13 +8,15 @@ según el tipo de documento.
 
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Optional, TYPE_CHECKING
+from typing import Callable, Literal, Optional, TYPE_CHECKING
 
 from .config import Config, GlmOcrConfig
 from .exceptions import FileError
 
 if TYPE_CHECKING:
     pass
+
+ProgressCallback = Callable[[str, int, int], None]
 
 
 @dataclass
@@ -33,6 +35,12 @@ class PdfStruct:
 
     - Para PDFs: utiliza PDFProcessor (basado en PyMuPDF4LLM).
     - Para otros documentos: utiliza DocumentProcessor.
+
+    Modos de operación:
+        - ``soft`` (default): extracción rápida con PyMuPDF4LLM, sin OCR
+          enrichment.
+        - ``hard``: extracción con GLM-OCR via Ollama para mayor precisión en
+          tablas y figuras. Requiere Ollama.
     """
 
     def __init__(
@@ -40,9 +48,10 @@ class PdfStruct:
         images_output_dir: str | None = None,
         glm_ocr_config: GlmOcrConfig | None = None,
         config_path: str | Path | None = None,
+        mode: Literal["soft", "hard"] | None = None,
     ):
-        from .pdf import PDFProcessor
         from .document import DocumentProcessor
+        from .pdf import PDFProcessor
 
         config = Config.load(config_path)
 
@@ -52,9 +61,15 @@ class PdfStruct:
             if images_output_dir is not None
             else str(config.images_output_dir)
         )
-        self.glm_ocr_config = (
-            glm_ocr_config if glm_ocr_config is not None else config.glm_ocr
-        )
+
+        if glm_ocr_config is not None:
+            self.glm_ocr_config = glm_ocr_config
+        elif mode == "hard":
+            self.glm_ocr_config = GlmOcrConfig(enabled=True)
+        elif mode == "soft":
+            self.glm_ocr_config = GlmOcrConfig(enabled=False)
+        else:
+            self.glm_ocr_config = config.glm_ocr
 
         self.pdf_processor = PDFProcessor(
             images_output_dir=self.images_output_dir,
@@ -67,6 +82,7 @@ class PdfStruct:
         document_path: str | Path,
         output_path: str | Path | None = None,
         max_pages: int | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> ExtractionResult:
         """
         Extrae un documento y devuelve el resultado en formato Markdown.
@@ -77,6 +93,9 @@ class PdfStruct:
                 proporciona, las referencias a imágenes se generan relativas
                 a su directorio.
             max_pages: Número máximo de páginas a procesar (solo PDFs).
+            progress_callback: Función opcional ``(stage, current, total)``
+                que recibe actualizaciones de progreso. ``stage`` describe la
+                etapa (p. ej. ``"glm_ocr_page"``).
 
         Returns:
             ExtractionResult con el markdown generado.
@@ -93,6 +112,7 @@ class PdfStruct:
                 document_path,
                 output_path=output_path,
                 max_pages=max_pages,
+                progress_callback=progress_callback,
             )
         else:
             return self.document_processor.extract(document_path)
@@ -102,6 +122,7 @@ class PdfStruct:
         document_path: str | Path,
         output_path: Optional[str | Path] = None,
         max_pages: int | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> Path:
         """
         Extrae el documento y lo guarda en un archivo Markdown.
@@ -115,6 +136,7 @@ class PdfStruct:
             document_path,
             output_path=output_path,
             max_pages=max_pages,
+            progress_callback=progress_callback,
         )
         output_path.write_text(result.markdown, encoding="utf-8")
         result.output_path = output_path

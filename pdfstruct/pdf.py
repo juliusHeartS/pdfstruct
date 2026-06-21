@@ -9,19 +9,21 @@ GLM-OCR via Ollama (opcional), validación cruzada y enriquecimiento.
 import fitz
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from .config import GlmOcrConfig
 from .core import ExtractionResult
 from .exceptions import ConfigurationError, ExtractionError, FileError
-from .extractors.pymupdf4llm_extractor import PyMuPDF4LLMExtractor
 from .extractors.markitdown_extractor import MarkItDownExtractor
+from .extractors.pymupdf4llm_extractor import PyMuPDF4LLMExtractor
 from .enrichers.cross_validator import CrossValidator
 from .enrichers.ollama_enricher import OllamaEnricher
 from .enrichers.table_post_processor import TablePostProcessor
 from .utils import clean_ocr_garbage, normalize_text
 
 logger = logging.getLogger(__name__)
+
+ProgressCallback = Callable[[str, int, int], None]
 
 
 class PDFProcessor:
@@ -63,6 +65,7 @@ class PDFProcessor:
         pdf_path: str | Path,
         output_path: str | Path | None = None,
         max_pages: int | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> ExtractionResult:
         """
         Extrae un PDF utilizando el extractor configurado.
@@ -74,6 +77,8 @@ class PDFProcessor:
                 a su directorio.
             max_pages: Número máximo de páginas a procesar. Útil para
                 procesar solo un prefijo de documentos grandes.
+            progress_callback: Función opcional ``(stage, current, total)``
+                que recibe actualizaciones de progreso.
 
         Returns:
             ExtractionResult con el Markdown generado y metadata.
@@ -131,6 +136,7 @@ class PDFProcessor:
                 images_dir=images_dir,
                 output_dir=output_dir,
                 filename_prefix=pdf_path.stem,
+                progress_callback=progress_callback,
             )
             metadata["ollama_pages_processed"] = page_count
             metadata["ollama_figures_processed"] = figure_count
