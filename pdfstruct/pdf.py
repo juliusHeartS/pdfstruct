@@ -10,6 +10,7 @@ import fitz
 from pathlib import Path
 from .core import ExtractionResult
 from .extractors.pymupdf4llm_extractor import PyMuPDF4LLMExtractor
+from .extractors.marker_extractor import MarkerExtractor
 from .extractors.markitdown_extractor import MarkItDownExtractor
 from .enrichers.cross_validator import CrossValidator
 from .enrichers.table_post_processor import TablePostProcessor
@@ -20,20 +21,29 @@ class PDFProcessor:
     """
     Procesador especializado para PDFs.
 
-    Utiliza PyMuPDF4LLM como extractor principal, con soporte
-    para validación cruzada y reparación de tablas.
+    Utiliza PyMuPDF4LLM como extractor principal por defecto, con soporte
+    opcional para Marker. Incluye validación cruzada y reparación de tablas.
     """
 
-    def __init__(self, images_output_dir: str = "pdf_images"):
+    def __init__(
+        self,
+        images_output_dir: str = "pdf_images",
+        extractor: str = "pymupdf4llm",
+    ):
+        self.extractor_name = extractor.lower().strip()
         self.pymupdf_extractor = PyMuPDF4LLMExtractor()
+        self.marker_extractor: MarkerExtractor | None = None
         self.markitdown_extractor = MarkItDownExtractor()
         self.cross_validator = CrossValidator()
         self.table_post_processor = TablePostProcessor()
         self.images_output_dir = Path(images_output_dir)
 
+        if self.extractor_name == "marker":
+            self.marker_extractor = MarkerExtractor()
+
     def extract(self, pdf_path: str | Path) -> ExtractionResult:
         """
-        Extrae un PDF utilizando PyMuPDF4LLM como extractor principal.
+        Extrae un PDF utilizando el extractor configurado.
         """
         pdf_path = Path(pdf_path).resolve()
 
@@ -45,7 +55,10 @@ class PDFProcessor:
         doc.close()
 
         # Extracción principal con marcadores de página
-        markdown_content = self._build_markdown_with_page_markers(pdf_path, total_pages)
+        if self.extractor_name == "marker" and self.marker_extractor is not None:
+            markdown_content = self.marker_extractor.extract(pdf_path)
+        else:
+            markdown_content = self._build_markdown_with_page_markers(pdf_path, total_pages)
 
         # Limpieza de artefactos de OCR
         markdown_content = clean_ocr_garbage(markdown_content)
@@ -71,7 +84,7 @@ class PDFProcessor:
         metadata = {
             "source_file": str(pdf_path),
             "file_type": ".pdf",
-            "extractor": "pymupdf4llm",
+            "extractor": self.extractor_name,
             "is_pdf": True,
             "total_pages": total_pages,
             "images_found": images_found,
@@ -95,7 +108,10 @@ class PDFProcessor:
         Extrae el PDF página por página e inserta un marcador <!-- PAGE: N / total -->
         antes del contenido de cada página.
         """
-        pages = self.pymupdf_extractor.extract_pages(pdf_path)
+        if self.extractor_name == "marker" and self.marker_extractor is not None:
+            pages = self.marker_extractor.extract_pages(pdf_path)
+        else:
+            pages = self.pymupdf_extractor.extract_pages(pdf_path)
         parts = []
 
         for page_number, page_text in enumerate(pages, start=1):

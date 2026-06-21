@@ -32,11 +32,11 @@ class PdfStruct:
     - Para otros documentos: utiliza DocumentProcessor.
     """
 
-    def __init__(self, images_output_dir: str = "pdf_images"):
+    def __init__(self, images_output_dir: str = "pdf_images", extractor: str = "pymupdf4llm"):
         self.images_output_dir = images_output_dir
         from .pdf import PDFProcessor
         from .document import DocumentProcessor
-        self.pdf_processor = PDFProcessor(images_output_dir=images_output_dir)
+        self.pdf_processor = PDFProcessor(images_output_dir=images_output_dir, extractor=extractor)
         self.document_processor = DocumentProcessor()
 
     def extract(self, document_path: str | Path) -> ExtractionResult:

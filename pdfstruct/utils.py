@@ -96,8 +96,17 @@ def clean_ocr_garbage(markdown: str) -> str:
     # 2. Quitar marcadores de imagen omitida.
     text = _OMITTED_PICTURE_RE.sub("", text)
 
-    # 3. Compactar <br> sueltos en saltos de línea limpios.
-    text = _BR_RUIDO_RE.sub("\n", text)
+    # 3. Conservar <br> dentro de celdas de tabla Markdown, pero compactar
+    #    <br> sueltos que no están dentro de una fila de tabla.
+    lines = text.splitlines()
+    preserved: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("|"):
+            preserved.append(line)
+        else:
+            preserved.append(_BR_RUIDO_RE.sub("\n", line))
+    text = "\n".join(preserved)
 
     # 4. Normalizar líneas vacías múltiples.
     text = re.sub(r"\n{3,}", "\n\n", text)

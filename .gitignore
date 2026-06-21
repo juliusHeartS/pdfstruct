@@ -12,6 +12,10 @@ __pycache__/
 resultados/
 resultados2/
 resultados2_before/
+resultados3/
+
+# Imágenes extraídas por pdfstruct
+pdf_images/
 
 # macOS
 .DS_Store

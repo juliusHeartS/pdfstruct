@@ -17,7 +17,7 @@ app = typer.Typer(
 console = Console()
 
 
-@app.command()
+@app.command(name="extract")
 def extract(
     document: Path = typer.Argument(..., help="Ruta al documento (PDF, DOCX, PPTX, etc.)"),
     output: Path = typer.Option(
@@ -30,6 +30,11 @@ def extract(
         "--images-dir",
         help="Carpeta donde guardar las imágenes extraídas (solo para PDFs)"
     ),
+    extractor: str = typer.Option(
+        "pymupdf4llm",
+        "--extractor", "-e",
+        help="Extractor a usar para PDFs: pymupdf4llm o marker"
+    ),
 ):
     """
     Extrae un documento a Markdown usando el extractor más adecuado.
@@ -37,7 +42,7 @@ def extract(
     console.print(f"[bold blue]Procesando:[/bold blue] {document}")
 
     try:
-        struct = PdfStruct(images_output_dir=str(images_dir))
+        struct = PdfStruct(images_output_dir=str(images_dir), extractor=extractor)
         result = struct.extract(document)
 
         if output is None:
