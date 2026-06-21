@@ -13,6 +13,7 @@ from typing import List, Dict, Any
 @dataclass
 class ValidationResult:
     """Resultado de la validación cruzada."""
+
     warnings: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -33,7 +34,7 @@ class CrossValidator:
         primary_markdown: str,
         secondary_markdown: str = "",
         primary_metadata: dict = None,
-        secondary_metadata: dict = None
+        secondary_metadata: dict = None,
     ) -> ValidationResult:
         """
         Compara los resultados de dos extractores y genera warnings.

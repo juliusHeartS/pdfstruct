@@ -7,10 +7,12 @@ El objetivo de `pdfstruct` es generar Markdown limpio, bien estructurado y rico 
 ## Características principales
 
 - **Extracción de PDFs** utilizando **PyMuPDF4LLM** como motor principal (mejor soporte para layouts de dos columnas, tablas y orden de lectura).
+- **GLM-OCR via Ollama** (opcional) para OCR de página completa, especialmente útil para tablas complejas y PDFs nativos donde PyMuPDF4LLM puede perder o fragmentar contenido.
+- **Configuración visible** mediante `pdfstruct.yaml` y variables de entorno `PDFSTRUCT_*`.
 - Soporte para **otros formatos** (DOCX, XLSX, PPTX, etc.) mediante MarkItDown.
-- **Validación cruzada ligera** entre extractores para detectar posibles omisiones o problemas de extracción.
-- Clasificación básica de imágenes (decorativas vs. imágenes con datos).
-- Inserción de marcadores de página (`<!-- PAGE: X -->`).
+- **Validación cruzada ligera** entre extractores para detectar posibles omisiones o problemas de extracción (se omite cuando GLM-OCR está activo para evitar OCR doble).
+- Inserción de marcadores de página (`<!-- PAGE: X / TOTAL -->`).
+- Referencias relativas de imágenes cuando se especifica `output_path`.
 - Arquitectura modular y extensible.
 - Interfaz de línea de comandos (CLI) funcional.
 
@@ -29,11 +31,10 @@ pip install -e .
 
 ```python
 from pdfstruct import PdfStruct
+from pdfstruct.config import GlmOcrConfig
 
-# Inicializar
+# Extracción básica con PyMuPDF4LLM
 struct = PdfStruct(images_output_dir="imagenes_extraidas")
-
-# Extraer un PDF
 result = struct.extract("informe_anual.pdf")
 
 print(result.markdown)           # Markdown generado
@@ -41,27 +42,90 @@ print(result.metadata)           # Metadata (extractor usado, warnings, etc.)
 
 # Guardar directamente en archivo
 output_path = struct.extract_to_file("informe_anual.pdf", output_path="salida.md")
+
+# Procesar solo las primeras 5 páginas de un documento grande
+result = struct.extract("libro_grueso.pdf", max_pages=5)
 ```
+
+### Con GLM-OCR (Ollama)
+
+```python
+from pdfstruct import PdfStruct
+from pdfstruct.config import GlmOcrConfig
+
+config = GlmOcrConfig(enabled=True, url="http://localhost:11434", model="glm-ocr:latest")
+struct = PdfStruct(images_output_dir="imagenes_extraidas", glm_ocr_config=config)
+result = struct.extract("informe_anual.pdf", output_path="salida.md")
+```
+
+### Configuración persistente (`pdfstruct.yaml`)
+
+Crea un archivo `pdfstruct.yaml` en el directorio de trabajo:
+
+```yaml
+images_output_dir: pdf_images
+
+glm_ocr:
+  enabled: false
+  url: http://localhost:11434
+  model: glm-ocr:latest
+  timeout: 600
+```
+
+`PdfStruct` lo cargará automáticamente y podrás sobrescribir valores
+pasando argumentos o variables de entorno.
 
 ### Como herramienta de línea de comandos
 
 ```bash
 # Extracción básica
-pdfstruct extract documento.pdf
+pdfstruct documento.pdf
 
 # Especificar archivo de salida y carpeta de imágenes
-pdfstruct extract documento.pdf -o salida.md --images-dir imagenes_pdf
+pdfstruct documento.pdf -o salida.md --images-dir imagenes_pdf
+
+# Activar GLM-OCR via Ollama
+pdfstruct documento.pdf -o salida.md --images-dir imagenes_pdf --glm-ocr-enabled true
+
+# Usar otro modelo de Ollama
+pdfstruct documento.pdf --glm-ocr-enabled true --glm-ocr-model glm-ocr:q8_0
 ```
+
+## Configuración de GLM-OCR
+
+Para usar GLM-OCR se requiere tener [Ollama](https://ollama.com) instalado y el modelo descargado:
+
+```bash
+# Instalar Ollama (macOS/Linux/Windows): https://ollama.com/download
+
+# Descargar GLM-OCR
+ollama pull glm-ocr:latest
+
+# Asegurarse de que el servidor está corriendo
+ollama serve
+```
+
+Variables de entorno reconocidas (prefijo recomendado `PDFSTRUCT_*`):
+
+- `PDFSTRUCT_GLM_OCR_ENABLED=true` — activa GLM-OCR.
+- `PDFSTRUCT_GLM_OCR_URL` — URL del servidor Ollama (default: `http://localhost:11434`).
+- `PDFSTRUCT_GLM_OCR_MODEL` — modelo a usar (default: `glm-ocr:latest`).
+- `PDFSTRUCT_GLM_OCR_TIMEOUT` — timeout en segundos (default: `600`).
+- `PDFSTRUCT_IMAGES_OUTPUT_DIR` — directorio base para imágenes (default: `pdf_images`).
+
+También se aceptan los nombres legacy `GLM_OCR_*`, pero `PDFSTRUCT_*` tiene prioridad.
 
 ## Arquitectura
 
 ```
 PdfStruct
+├── Config (carga de `pdfstruct.yaml`, env vars y defaults)
 ├── PDFProcessor (para PDFs)
 │   ├── PyMuPDF4LLMExtractor (principal)
+│   ├── OllamaEnricher (GLM-OCR opcional, OCR de página completa)
 │   ├── MarkItDownExtractor (fallback)
 │   ├── CrossValidator (validación cruzada)
-│   └── ImageClassifier + PageMarkers (enriquecimiento)
+│   └── TablePostProcessor + utilidades (limpieza y reparación)
 │
 └── DocumentProcessor (para DOCX, XLSX, PPTX, etc.)
     └── MarkItDownExtractor
@@ -69,19 +133,21 @@ PdfStruct
 
 ## Estado actual del proyecto
 
-El proyecto se encuentra en fase de desarrollo activo. Actualmente cuenta con:
+El proyecto se encuentra en fase de preparación para publicación (v0.3.0). Actualmente cuenta con:
 
 - Extracción funcional de PDFs usando PyMuPDF4LLM.
+- Integración opcional con GLM-OCR via Ollama para OCR de página completa.
 - Soporte para documentos que no son PDF.
 - Validación cruzada básica (reporta warnings).
-- Clasificación simple de imágenes.
 - CLI operativa.
+- Configuración persistente mediante `pdfstruct.yaml`.
+- Tests de integración con 10 PDFs reales.
+- Logging estructurado y excepciones específicas.
 
 **Próximos pasos planeados:**
-- Mejorar la detección y clasificación de imágenes con datos.
 - Fortalecer el `CrossValidator` con más reglas de validación.
-- Mejorar el manejo de tablas complejas.
-- Agregar soporte para descripciones de imágenes (OCR selectivo).
+- Mejorar el manejo de figuras vectoriales.
+- Publicar en PyPI.
 
 ## Cuándo usar pdfstruct
 

@@ -7,7 +7,10 @@ Tests de integración para PdfStruct con PDFs y documentos genéricos.
 import fitz
 import struct
 from pathlib import Path
+
 from pdfstruct import PdfStruct
+from pdfstruct.config import GlmOcrConfig
+from pdfstruct.exceptions import ConfigurationError, FileError
 
 
 def _create_test_pdf(output_path: Path, num_pages: int = 1) -> Path:
@@ -63,11 +66,33 @@ def test_extract_pdf_with_images(tmp_path: Path):
     assert result.images_dir is None
 
 
-
 def test_extract_nonexistent_file(tmp_path: Path):
     struct = PdfStruct()
     try:
         struct.extract(tmp_path / "no_existe.pdf")
-        assert False, "Debería haber lanzado FileNotFoundError"
-    except FileNotFoundError:
+        assert False, "Debería haber lanzado FileError"
+    except FileError:
         pass
+
+
+def test_extract_pdf_with_glm_ocr_disabled_by_default(tmp_path: Path):
+    pdf_path = tmp_path / "test.pdf"
+    _create_test_pdf(pdf_path, num_pages=1)
+
+    struct = PdfStruct(images_output_dir=str(tmp_path / "images"))
+    result = struct.extract(pdf_path)
+
+    assert result.metadata["glm_ocr_enabled"] is False
+    assert result.metadata.get("glm_ocr_fallback") is None
+
+
+def test_extract_pdf_with_glm_ocr_requires_ollama(tmp_path: Path):
+    pdf_path = tmp_path / "test.pdf"
+    _create_test_pdf(pdf_path, num_pages=1)
+
+    config = GlmOcrConfig(enabled=True, url="http://localhost:99999")
+    try:
+        PdfStruct(images_output_dir=str(tmp_path / "images"), glm_ocr_config=config)
+        assert False, "Debería haber lanzado ConfigurationError"
+    except ConfigurationError as exc:
+        assert "Ollama no responde" in str(exc)

@@ -15,7 +15,7 @@ def classify_image(
     image_index: int = 0,
     image_size: int = 0,
     image_width: int = 0,
-    image_height: int = 0
+    image_height: int = 0,
 ) -> Dict[str, Any]:
     """
     Clasifica una imagen como 'decorative' o 'data_rich'.

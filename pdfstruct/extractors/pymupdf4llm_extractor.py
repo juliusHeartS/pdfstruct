@@ -38,7 +38,40 @@ class PyMuPDF4LLMExtractor:
             raise FileNotFoundError(f"No se encontró el archivo PDF: {pdf_path}")
 
         import pymupdf4llm
+
         return pymupdf4llm.to_markdown(str(pdf_path))
+
+    def _extract_page_chunks(self, pdf_path: str | Path) -> list[dict]:
+        """
+        Extrae el PDF con page_chunks=True y devuelve los chunks crudos.
+
+        Args:
+            pdf_path: Ruta al archivo PDF.
+
+        Returns:
+            Lista de diccionarios con 'text' y 'metadata' por página.
+        """
+        pdf_path = Path(pdf_path)
+
+        if not pdf_path.exists():
+            raise FileNotFoundError(f"No se encontró el archivo PDF: {pdf_path}")
+
+        import pymupdf4llm
+
+        chunks = pymupdf4llm.to_markdown(str(pdf_path), page_chunks=True)
+
+        if isinstance(chunks, list):
+            return [
+                chunk
+                if isinstance(chunk, dict)
+                else {"text": str(chunk), "metadata": {}}
+                for chunk in chunks
+            ]
+
+        # Fallback: si no devuelve chunks, devolvemos el texto completo como una sola página.
+        return [
+            {"text": pymupdf4llm.to_markdown(str(pdf_path)), "metadata": {"page": 1}}
+        ]
 
     def extract_pages(self, pdf_path: str | Path) -> list[str]:
         """
@@ -50,16 +83,5 @@ class PyMuPDF4LLMExtractor:
         Returns:
             Lista con el Markdown de cada página, en orden.
         """
-        pdf_path = Path(pdf_path)
-
-        if not pdf_path.exists():
-            raise FileNotFoundError(f"No se encontró el archivo PDF: {pdf_path}")
-
-        import pymupdf4llm
-        chunks = pymupdf4llm.to_markdown(str(pdf_path), page_chunks=True)
-
-        if isinstance(chunks, list):
-            return [chunk.get("text", "") if isinstance(chunk, dict) else str(chunk) for chunk in chunks]
-
-        # Fallback: si no devuelve chunks, devolvemos el texto completo como una sola página.
-        return [pymupdf4llm.to_markdown(str(pdf_path))]
+        chunks = self._extract_page_chunks(pdf_path)
+        return [chunk.get("text", "") for chunk in chunks]

@@ -26,9 +26,7 @@ def _looks_like_header(line: str) -> bool:
 def _looks_like_list_item(line: str) -> bool:
     """Detecta si una línea es una viñeta o ítem numerado."""
     stripped = line.strip()
-    return bool(
-        re.match(r"^(\*\s+|\-\s+|\+\s+|\d+\.\s+|\d+\)\s+)", stripped)
-    )
+    return bool(re.match(r"^(\*\s+|\-\s+|\+\s+|\d+\.\s+|\d+\)\s+)", stripped))
 
 
 def _looks_like_page_number(line: str) -> bool:
@@ -123,7 +121,11 @@ def merge_short_lines(markdown: str) -> str:
             i += 1
             continue
 
-        if _looks_like_header(stripped) or _looks_like_list_item(stripped) or _looks_like_table_row(stripped):
+        if (
+            _looks_like_header(stripped)
+            or _looks_like_list_item(stripped)
+            or _looks_like_table_row(stripped)
+        ):
             flush()
             result.append(line)
             i += 1

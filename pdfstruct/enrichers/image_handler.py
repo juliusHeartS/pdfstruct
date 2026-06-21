@@ -68,20 +68,24 @@ def extract_and_save_images(
                     continue
                 seen_hashes.add(img_hash)
 
-                filename = f"page_{page_num + 1:03d}_img_{img_index + 1:02d}.{image_ext}"
+                filename = (
+                    f"page_{page_num + 1:03d}_img_{img_index + 1:02d}.{image_ext}"
+                )
                 image_path = output_dir / filename
 
                 with open(image_path, "wb") as f:
                     f.write(image_bytes)
 
-                images_info.append({
-                    "page": page_num + 1,
-                    "index": img_index + 1,
-                    "path": image_path,
-                    "filename": filename,
-                    "hash": img_hash,
-                    "bytes": len(image_bytes),
-                })
+                images_info.append(
+                    {
+                        "page": page_num + 1,
+                        "index": img_index + 1,
+                        "path": image_path,
+                        "filename": filename,
+                        "hash": img_hash,
+                        "bytes": len(image_bytes),
+                    }
+                )
     finally:
         if opened_here:
             doc.close()

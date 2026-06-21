@@ -21,7 +21,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Procesa un documento con pdfstruct y guarda los resultados."
     )
-    parser.add_argument("document", type=Path, help="Ruta al documento (PDF, DOCX, etc.)")
+    parser.add_argument(
+        "document", type=Path, help="Ruta al documento (PDF, DOCX, etc.)"
+    )
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -62,7 +64,7 @@ def main() -> int:
     print(f"Imágenes extraídas: {result.metadata.get('images_found', 0)}")
     if result.images_dir:
         print(f"Imágenes guardadas en: {result.images_dir}")
-    print(f"\nResumen de metadata:")
+    print("\nResumen de metadata:")
     for key, value in result.metadata.items():
         print(f"  {key}: {value}")
 

@@ -7,12 +7,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.egg-info/
+.pytest_cache/
+.ruff_cache/
 
 # Resultados locales de pruebas
-resultados/
-resultados2/
-resultados2_before/
-resultados3/
+resultados*/
 
 # Imágenes extraídas por pdfstruct
 pdf_images/
@@ -23,3 +22,7 @@ pdf_images/
 # Archivos temporales
 *.tmp
 *.log
+
+# Distribución
+build/
+dist/

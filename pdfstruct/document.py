@@ -38,7 +38,5 @@ class DocumentProcessor:
         }
 
         from .core import ExtractionResult
-        return ExtractionResult(
-            markdown=markdown_content,
-            metadata=metadata
-        )
+
+        return ExtractionResult(markdown=markdown_content, metadata=metadata)

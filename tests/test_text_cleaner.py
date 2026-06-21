@@ -65,6 +65,8 @@ def test_clean_markdown_pipeline():
     )
     result = clean_markdown(markdown)
     assert "La situación de la enfermería en la Región de las Américas" in result
-    assert result.count("La situación de la enfermería en la Región de las Américas") == 1
+    assert (
+        result.count("La situación de la enfermería en la Región de las Américas") == 1
+    )
     assert "12" not in result
     assert "Texto final." in result

@@ -6,7 +6,10 @@ Tests básicos para image_handler con PDFs generados dinámicamente.
 
 import fitz
 from pathlib import Path
-from pdfstruct.enrichers.image_handler import extract_and_save_images, create_image_references
+from pdfstruct.enrichers.image_handler import (
+    extract_and_save_images,
+    create_image_references,
+)
 
 
 def _create_test_pdf(output_path: Path) -> Path:
@@ -19,6 +22,7 @@ def _create_test_pdf(output_path: Path) -> Path:
 
     # Imagen embebida simple (rectángulo rojo 20x20) para superar el filtro de 100 bytes
     import struct
+
     width, height = 20, 20
     samples = b"".join(struct.pack(">BBB", 255, 0, 0) for _ in range(width * height))
     pixmap = fitz.Pixmap(fitz.csRGB, width, height, samples, 0)

@@ -42,11 +42,13 @@ class PyMuPDFExtractor:
         for page_num, page in enumerate(doc):
             image_list = page.get_images(full=True)
             for img_index, img in enumerate(image_list):
-                images_info.append({
-                    "page": page_num + 1,
-                    "index": img_index + 1,
-                    "xref": img[0],
-                })
+                images_info.append(
+                    {
+                        "page": page_num + 1,
+                        "index": img_index + 1,
+                        "xref": img[0],
+                    }
+                )
 
         doc.close()
         return images_info

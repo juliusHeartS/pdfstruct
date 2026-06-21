@@ -21,6 +21,7 @@ class TablePostProcessor:
 
     def __init__(self):
         from .table_extractor import TableReconstructor
+
         self._reconstructor = TableReconstructor()
 
     def process(self, markdown: str) -> str:
@@ -123,7 +124,9 @@ class TablePostProcessor:
 
         for line in buffer:
             stripped = line.strip()
-            is_table_line = stripped.startswith("|") or (table_started and stripped.startswith("**"))
+            is_table_line = stripped.startswith("|") or (
+                table_started and stripped.startswith("**")
+            )
 
             if not table_started:
                 if is_table_line:
@@ -169,10 +172,9 @@ class TablePostProcessor:
                 continue
 
             is_table_row = stripped.startswith("|")
-            is_year_or_header = (
-                re.match(r"^\*\*20\d{2}\*\*$", stripped)
-                or stripped in ("**_n_**", "**n**", "**N**", "**%**")
-            )
+            is_year_or_header = re.match(
+                r"^\*\*20\d{2}\*\*$", stripped
+            ) or stripped in ("**_n_**", "**n**", "**N**", "**%**")
 
             if is_table_row:
                 joined.append(line)
@@ -271,7 +273,11 @@ class TablePostProcessor:
         has_subheader_n_pct = self._has_n_pct_subheader(parsed, years)
 
         if has_subheader_n_pct:
-            header = ["Dimensión", "Indicador"] + [f"{y} n" for y in years] + [f"{y} %" for y in years]
+            header = (
+                ["Dimensión", "Indicador"]
+                + [f"{y} n" for y in years]
+                + [f"{y} %" for y in years]
+            )
         else:
             header = ["Dimensión", "Indicador"] + [str(y) for y in years]
         result = [self._render_row(header), self._render_row(["---"] * len(header))]
@@ -284,7 +290,9 @@ class TablePostProcessor:
 
             row_text = " ".join(row)
             if "Indicadores" in row_text and not any(
-                self._NUMBER_RE.match(t) for cell in row for t in self._cell_tokens(cell)
+                self._NUMBER_RE.match(t)
+                for cell in row
+                for t in self._cell_tokens(cell)
             ):
                 continue
 
@@ -324,12 +332,16 @@ class TablePostProcessor:
             if not values:
                 continue
 
-            prefix = row[:numeric_cols[0]]
-            flat = " ".join(" ".join(self._cell_tokens(c)) for c in prefix if c.strip()).strip()
+            prefix = row[: numeric_cols[0]]
+            flat = " ".join(
+                " ".join(self._cell_tokens(c)) for c in prefix if c.strip()
+            ).strip()
             if not flat:
                 continue
 
-            dimension, indicator = self._split_dimension_indicator(flat, current_dimension)
+            dimension, indicator = self._split_dimension_indicator(
+                flat, current_dimension
+            )
             if dimension:
                 current_dimension = dimension
 
@@ -342,7 +354,11 @@ class TablePostProcessor:
         """Detecta si la tabla tiene subheader n/% apilado por año."""
         for row in parsed[:5]:
             row_text = " ".join(row)
-            n_pct_tokens = [t for t in row_text.replace("<br>", " ").split() if t in ("**_n_**", "**%**", "_n_", "%")]
+            n_pct_tokens = [
+                t
+                for t in row_text.replace("<br>", " ").split()
+                if t in ("**_n_**", "**%**", "_n_", "%")
+            ]
             if len(n_pct_tokens) >= len(years):
                 return True
         return False
@@ -350,7 +366,9 @@ class TablePostProcessor:
     @staticmethod
     def _cell_tokens(cell: str) -> List[str]:
         """Divide una celda en tokens, manejando saltos de línea y <br>."""
-        normalized = cell.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
+        normalized = (
+            cell.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
+        )
         return [t.strip() for t in normalized.replace("\n", " ").split() if t.strip()]
 
     @staticmethod
@@ -362,7 +380,9 @@ class TablePostProcessor:
         return []
 
     @staticmethod
-    def _split_dimension_indicator(prefix: str, current_dimension: str) -> Tuple[str, str]:
+    def _split_dimension_indicator(
+        prefix: str, current_dimension: str
+    ) -> Tuple[str, str]:
         known_dimensions = [
             "Reglamentación y acreditación",
             "Número de trabajadores activos",
@@ -377,7 +397,7 @@ class TablePostProcessor:
 
         for dim in known_dimensions:
             if prefix.startswith(dim):
-                return dim, prefix[len(dim):].strip()
+                return dim, prefix[len(dim) :].strip()
 
         if "\n" in prefix:
             parts = [p.strip() for p in prefix.split("\n", 1)]
@@ -458,7 +478,11 @@ class TablePostProcessor:
         if all(re.match(r"^[-=:]+$", c) or c == "" for c in lower):
             return False
 
-        complement = sum(1 for u, l in zip(upper, lower) if (u == "" and l) or (u and l == ""))
+        complement = sum(
+            1
+            for u, lower_cell in zip(upper, lower)
+            if (u == "" and lower_cell) or (u and lower_cell == "")
+        )
         if complement >= max(len(upper) // 2, 2):
             return True
 
@@ -467,12 +491,16 @@ class TablePostProcessor:
     @staticmethod
     def _merge_rows(upper: List[str], lower: List[str]) -> List[str]:
         merged = []
-        for u, l in zip(upper, lower):
-            if u and l:
-                sep = "" if u.endswith(("-", "/")) or l.startswith(("-", "/")) else " "
-                merged.append((u + sep + l).strip())
+        for u, lower_cell in zip(upper, lower):
+            if u and lower_cell:
+                sep = (
+                    ""
+                    if u.endswith(("-", "/")) or lower_cell.startswith(("-", "/"))
+                    else " "
+                )
+                merged.append((u + sep + lower_cell).strip())
             else:
-                merged.append(u or l)
+                merged.append(u or lower_cell)
         return merged
 
     def _expand_stacked_numbers(self, lines: List[str]) -> List[str]:
@@ -491,13 +519,15 @@ class TablePostProcessor:
             row = result[i]
             for j, cell in enumerate(row):
                 values = [v.strip() for v in cell.splitlines() if v.strip()]
-                if len(values) == len(years) and all(self._NUMBER_RE.match(v) for v in values):
+                if len(values) == len(years) and all(
+                    self._NUMBER_RE.match(v) for v in values
+                ):
                     new_rows = []
                     for val in values:
                         new_row = list(row)
                         new_row[j] = val
                         new_rows.append(new_row)
-                    result = result[:i] + new_rows + result[i+1:]
+                    result = result[:i] + new_rows + result[i + 1 :]
                     break
 
         return [self._render_row(row) for row in result]
@@ -511,7 +541,9 @@ class TablePostProcessor:
 
     @staticmethod
     def _extract_years(row: List[str]) -> List[int]:
-        years = sorted({int(y) for y in TablePostProcessor._YEAR_RE.findall(" ".join(row))})
+        years = sorted(
+            {int(y) for y in TablePostProcessor._YEAR_RE.findall(" ".join(row))}
+        )
         return years if len(years) >= 2 else []
 
     @staticmethod

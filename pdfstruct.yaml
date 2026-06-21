@@ -1,0 +1,27 @@
+# pdfstruct.yaml
+#
+# Configuración visible para pdfstruct.
+# Este archivo se carga automáticamente si existe en el directorio de trabajo
+# como ``pdfstruct.yaml``. La precedencia es:
+#
+#   argumentos de código/CLI > variables de entorno > este archivo > defaults
+#
+# Variables de entorno soportadas (prefijo PDFSTRUCT_):
+#   PDFSTRUCT_IMAGES_OUTPUT_DIR
+#   PDFSTRUCT_GLM_OCR_ENABLED
+#   PDFSTRUCT_GLM_OCR_URL
+#   PDFSTRUCT_GLM_OCR_MODEL
+#   PDFSTRUCT_GLM_OCR_TIMEOUT
+
+# Directorio base donde se guardarán las imágenes extraídas de los PDFs.
+images_output_dir: pdf_images
+
+# Configuración opcional de GLM-OCR via Ollama.
+glm_ocr:
+  enabled: false
+  url: http://localhost:11434
+  model: glm-ocr:latest
+  timeout: 600
+  # Prompts personalizables (descomenta para modificarlos):
+  # table_prompt: "Extrae esta tabla como Markdown..."
+  # figure_prompt: "Describe esta imagen de forma concisa..."

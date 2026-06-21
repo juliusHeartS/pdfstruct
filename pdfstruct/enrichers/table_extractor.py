@@ -33,7 +33,9 @@ class TableExtractor:
             "text_y_tolerance": 4,
         }
 
-    def extract_page_tables(self, pdf_path: str | Path, page_index: int) -> List[List[List[str]]]:
+    def extract_page_tables(
+        self, pdf_path: str | Path, page_index: int
+    ) -> List[List[List[str]]]:
         """
         Extrae todas las tablas de una página específica.
 
@@ -169,7 +171,8 @@ class TableReconstructor:
 
         # Filtrar filas de separador y encabezados previos antes de procesar datos.
         content_rows = [
-            row for row in parsed
+            row
+            for row in parsed
             if not all(re.match(r"^[-=:]+$", c) or c == "" for c in row)
         ]
 
@@ -179,7 +182,11 @@ class TableReconstructor:
             return markdown_table
 
         # Reconstruir encabezado
-        new_header = ["Dimensión", "Indicador"] + [f"{y} n" for y in years] + [f"{y} %" for y in years]
+        new_header = (
+            ["Dimensión", "Indicador"]
+            + [f"{y} n" for y in years]
+            + [f"{y} %" for y in years]
+        )
         separator = ["---"] * len(new_header)
 
         result_lines = [
@@ -212,10 +219,10 @@ class TableReconstructor:
         # Buscar en las primeras filas una celda que contenga años en líneas separadas
         for row in parsed[:5]:
             for cell in row:
-                lines = [l.strip() for l in cell.splitlines() if l.strip()]
+                lines = [line.strip() for line in cell.splitlines() if line.strip()]
                 years = []
-                for l in lines:
-                    matches = self._YEAR_RE.findall(l)
+                for line in lines:
+                    matches = self._YEAR_RE.findall(line)
                     years.extend(int(m) for m in matches)
                 if len(years) >= 2:
                     return sorted(set(years))
@@ -228,7 +235,9 @@ class TableReconstructor:
                 return years
         return []
 
-    def _extract_data_rows(self, parsed: List[List[str]], years: List[int]) -> List[List[str]]:
+    def _extract_data_rows(
+        self, parsed: List[List[str]], years: List[int]
+    ) -> List[List[str]]:
         """
         Extrae filas de datos reconstruyendo dimensión, indicador y pares n/%.
 
@@ -240,15 +249,19 @@ class TableReconstructor:
         data_start_found = False
 
         for row in parsed:
-            row_text = " ".join(row)
-
             # Detectar fila que marca el inicio real de datos
-            numeric_cells = [i for i, cell in enumerate(row) if self._is_stacked_numbers(cell, years)]
+            numeric_cells = [
+                i for i, cell in enumerate(row) if self._is_stacked_numbers(cell, years)
+            ]
             if not data_start_found:
                 if not numeric_cells:
                     continue
                 # Saltar filas que solo contienen el encabezado "Indicadores"
-                if len(numeric_cells) == 1 and len(row) == 2 and row[0].strip().lower() in ("indicadores", "indicador"):
+                if (
+                    len(numeric_cells) == 1
+                    and len(row) == 2
+                    and row[0].strip().lower() in ("indicadores", "indicador")
+                ):
                     continue
                 data_start_found = True
 
@@ -263,12 +276,16 @@ class TableReconstructor:
 
             # Columnas anteriores: dimensión e indicador
             prefix = row[:data_col]
-            flat_prefix = " ".join(" ".join(c.splitlines()) for c in prefix if c.strip()).strip()
+            flat_prefix = " ".join(
+                " ".join(c.splitlines()) for c in prefix if c.strip()
+            ).strip()
             if not flat_prefix:
                 continue
 
             # Separar dimensión e indicador
-            dimension, indicator = self._split_dimension_indicator(flat_prefix, current_dimension)
+            dimension, indicator = self._split_dimension_indicator(
+                flat_prefix, current_dimension
+            )
             if dimension and dimension != current_dimension:
                 current_dimension = dimension
 
@@ -291,7 +308,9 @@ class TableReconstructor:
         # Patrón aceptado: N números (uno por año) o 2*N valores alternados
         return len(values) in (len(years), len(years) * 2)
 
-    def _extract_number_pairs(self, cell: str, years: List[int]) -> List[Tuple[str, str]]:
+    def _extract_number_pairs(
+        self, cell: str, years: List[int]
+    ) -> List[Tuple[str, str]]:
         """Extrae pares (n, %) de una celda con números apilados."""
         values = self._parse_number_tokens(cell)
         if len(values) == len(years):
@@ -308,10 +327,10 @@ class TableReconstructor:
     def _parse_number_tokens(cell: str) -> List[str]:
         """Extrae tokens numéricos o % de una celda, ya sea por líneas o espacios."""
         # Primero intentar por saltos de línea
-        lines = [l.strip() for l in cell.splitlines() if l.strip()]
+        lines = [line.strip() for line in cell.splitlines() if line.strip()]
         if lines:
             # Si cada línea es un token simple, usar líneas
-            if all(len(l.split()) <= 1 for l in lines):
+            if all(len(line.split()) <= 1 for line in lines):
                 return lines
             # Si las líneas concatenadas forman tokens, unirlas
             flat = " ".join(lines)
@@ -324,10 +343,15 @@ class TableReconstructor:
     @staticmethod
     def _has_only_numbers(values: List[str]) -> bool:
         """¿Todos los valores son numéricos (sin %)?"""
-        return all(not v.endswith("%") and TableReconstructor._NUMBER_RE.match(v) for v in values)
+        return all(
+            not v.endswith("%") and TableReconstructor._NUMBER_RE.match(v)
+            for v in values
+        )
 
     @staticmethod
-    def _split_dimension_indicator(prefix: str, current_dimension: str) -> Tuple[str, str]:
+    def _split_dimension_indicator(
+        prefix: str, current_dimension: str
+    ) -> Tuple[str, str]:
         """
         Separa dimensión e indicador de un texto plano.
 
@@ -348,7 +372,7 @@ class TableReconstructor:
 
         for dim in known_dimensions:
             if prefix.startswith(dim):
-                return dim, prefix[len(dim):].strip()
+                return dim, prefix[len(dim) :].strip()
 
         # Si el texto contiene un salto de línea, separar por la primera línea
         if "\n" in prefix:
