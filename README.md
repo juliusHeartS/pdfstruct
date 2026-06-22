@@ -1,15 +1,19 @@
 # pdfstruct
 
-**Extractor de documentos a Markdown de alta calidad**, especialmente diseñado para PDFs complejos y documentos institucionales.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**Extractor de documentos a Markdown de alta calidad**, diseñado para PDFs complejos y documentos institucionales.
 
 El objetivo de `pdfstruct` es generar Markdown limpio, bien estructurado y rico en contexto, listo para ser utilizado en sistemas RAG, bases de datos vectoriales o pipelines de procesamiento de documentos.
 
 ## Características principales
 
 - **Extracción de PDFs** utilizando **PyMuPDF4LLM** como motor principal (mejor soporte para layouts de dos columnas, tablas y orden de lectura).
-- **Modos `soft` y `hard`**:
+- **Tres modos de extracción**:
   - `soft` (default): extracción rápida sin OCR enrichment.
-  - `hard`: extracción con GLM-OCR via Ollama para mayor precisión en tablas y figuras.
+  - `hard`: extracción con GLM-OCR via Ollama para máxima precisión en tablas y figuras.
+  - `hybrid`: detección de layout con YOLOv8-doclaynet + PyMuPDF + GLM-OCR selectivo por regiones.
 - **Configuración visible** mediante `pdfstruct.yaml` y variables de entorno `PDFSTRUCT_*`.
 - Soporte para **otros formatos** (DOCX, XLSX, PPTX, etc.) mediante MarkItDown.
 - **Validación cruzada ligera** entre extractores para detectar posibles omisiones o problemas de extracción (se omite cuando GLM-OCR está activo para evitar OCR doble).
@@ -19,14 +23,36 @@ El objetivo de `pdfstruct` es generar Markdown limpio, bien estructurado y rico 
 - Arquitectura modular y extensible.
 - Interfaz de línea de comandos (CLI) funcional.
 
+## Requisitos
+
+- Python 3.10 o superior.
+- Para modos `hard` e `hybrid`: [Ollama](https://ollama.com) instalado y corriendo con el modelo `glm-ocr:latest` disponible.
+- Para modo `hybrid`: dependencias adicionales de `ultralytics` y `huggingface_hub`.
+
 ## Instalación
 
+Instalación base (modos `soft` y `hard`):
+
 ```bash
+git clone https://github.com/juliusHeartS/pdfstruct.git
 cd pdfstruct
+git checkout experiments/hybrid-layout-detection
 pip install -e .
 ```
 
-> **Nota:** Se recomienda tener instalada la librería `pymupdf4llm` para obtener el mejor rendimiento en PDFs.
+Instalación completa con modo `hybrid`:
+
+```bash
+pip install -e ".[hybrid]"
+```
+
+Instalación para desarrollo:
+
+```bash
+pip install -e ".[dev]"
+```
+
+> **Nota:** Se recomienda tener instalada la librería `pymupdf4llm` para obtener el mejor rendimiento en PDFs. Se instala automáticamente como dependencia principal.
 
 ## Uso
 
@@ -34,9 +60,8 @@ pip install -e .
 
 ```python
 from pdfstruct import PdfStruct
-from pdfstruct.config import GlmOcrConfig
 
-# Extracción básica con PyMuPDF4LLM
+# Extracción básica con PyMuPDF4LLM (modo soft)
 struct = PdfStruct(images_output_dir="imagenes_extraidas")
 result = struct.extract("informe_anual.pdf")
 
@@ -60,7 +85,6 @@ struct = PdfStruct(mode="hard", images_output_dir="imagenes_extraidas")
 result = struct.extract("informe_anual.pdf", output_path="salida.md")
 
 # Con callback de progreso
-
 def on_progress(stage, current, total):
     print(f"{stage}: {current}/{total}")
 
@@ -69,6 +93,16 @@ result = struct.extract(
     output_path="salida.md",
     progress_callback=on_progress,
 )
+```
+
+### Modo `hybrid` (YOLOv8-doclaynet + GLM-OCR selectivo)
+
+```python
+from pdfstruct import PdfStruct
+
+# Requiere Ollama y pip install "pdfstruct[hybrid]"
+struct = PdfStruct(mode="hybrid", images_output_dir="imagenes_extraidas")
+result = struct.extract("informe_anual.pdf", output_path="salida.md")
 ```
 
 ### Configuración persistente (`pdfstruct.yaml`)
@@ -83,6 +117,13 @@ glm_ocr:
   url: http://localhost:11434
   model: glm-ocr:latest
   timeout: 600
+
+hybrid:
+  dpi: 200
+  conf_threshold: 0.25
+  target_labels:
+    - Table
+    - Picture
 ```
 
 `PdfStruct` lo cargará automáticamente y podrás sobrescribir valores
@@ -100,7 +141,10 @@ pdfstruct documento.pdf -o salida.md --images-dir imagenes_pdf
 # Modo hard con GLM-OCR (requiere Ollama)
 pdfstruct documento.pdf -o salida.md --images-dir imagenes_pdf --mode hard
 
-# Modo hard con barra de progreso
+# Modo híbrido (requiere Ollama y extras de hybrid)
+pdfstruct documento.pdf -o salida.md --images-dir imagenes_pdf --mode hybrid
+
+# Modo hard o híbrido con barra de progreso
 pdfstruct documento.pdf -o salida.md --mode hard --progress
 
 # Usar otro modelo de Ollama
@@ -138,8 +182,9 @@ PdfStruct
 ├── Config (carga de `pdfstruct.yaml`, env vars y defaults)
 ├── PDFProcessor (para PDFs)
 │   ├── PyMuPDF4LLMExtractor (principal)
-│   ├── OllamaEnricher (GLM-OCR opcional, OCR de página completa)
-│   ├── MarkItDownExtractor (fallback)
+│   ├── OllamaEnricher (GLM-OCR página completa, modo hard)
+│   ├── HybridEnricher (YOLO + GLM-OCR selectivo, modo hybrid)
+│   ├── MarkItDownExtractor (fallback y otros formatos)
 │   ├── CrossValidator (validación cruzada)
 │   └── TablePostProcessor + utilidades (limpieza y reparación)
 │
@@ -149,28 +194,36 @@ PdfStruct
 
 ## Estado actual del proyecto
 
-El proyecto se encuentra en fase de preparación para publicación (v0.3.0). Actualmente cuenta con:
+El proyecto se encuentra en fase activa de desarrollo (v0.3.0) en la rama `experiments/hybrid-layout-detection`. Actualmente cuenta con:
 
 - Extracción funcional de PDFs usando PyMuPDF4LLM.
-- Integración opcional con GLM-OCR via Ollama para OCR de página completa.
+- Integración opcional con GLM-OCR via Ollama para OCR de página completa (modo `hard`).
+- Pipeline híbrido con YOLOv8-doclaynet y GLM-OCR selectivo (modo `hybrid`).
 - Soporte para documentos que no son PDF.
 - Validación cruzada básica (reporta warnings).
-- CLI operativa.
+- CLI operativa con soporte para los tres modos y barra de progreso.
 - Configuración persistente mediante `pdfstruct.yaml`.
-- Tests de integración con 10 PDFs reales.
+- Tests de integración con 10 PDFs reales del corpus PAHO.
 - Logging estructurado y excepciones específicas.
+- Documentación técnica en `DescripcionTecnicaPdfstruct.md`.
 
 **Próximos pasos planeados:**
 - Fortalecer el `CrossValidator` con más reglas de validación.
-- Mejorar el manejo de figuras vectoriales.
-- Publicar en PyPI.
+- Mejorar el manejo de figuras vectoriales y organigramas.
+- Optimizar el modo `hybrid` para GPU.
+- Publicar la primera versión estable en PyPI.
 
 ## Cuándo usar pdfstruct
 
 - Cuando necesitas extraer PDFs con layouts complejos (dos columnas, tablas, gráficos).
 - Cuando quieres un Markdown más limpio y estructurado que el que entrega MarkItDown por defecto en PDFs.
 - Cuando estás construyendo un pipeline RAG y necesitas buena calidad de extracción + trazabilidad (páginas, imágenes).
+- Cuando prefieres ejecutar modelos de visión localmente con Ollama en lugar de depender de APIs en la nube.
 
 ## Licencia
 
 MIT
+
+## Documentación adicional
+
+Para una descripción técnica completa de la historia, motivación, arquitectura, elección de tecnologías, limitaciones e instrucciones de uso en RAG, consulta el documento [`DescripcionTecnicaPdfstruct.md`](DescripcionTecnicaPdfstruct.md).
