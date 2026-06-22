@@ -445,4 +445,56 @@ Mirando hacia adelante, el principal desafío de `pdfstruct` será mantener esta
 - Ollama: https://ollama.com
 - GLM-OCR: modelo multimodal disponible en Ollama.
 - YOLOv8 y DocLayNet: modelo de detección de layout usado en modo híbrido.
-- `pdfstruct` repositorio: código fuente, tests y experimentos.
+- `pdfstruct` repositorio: código fuente, tests y experimentes.
+
+---
+
+## Anexo 1. Documentos utilizados en las pruebas
+
+Las pruebas de `pdfstruct` se realizaron sobre un conjunto de 10 documentos del corpus `paho_pdfs`, correspondientes a publicaciones de la Organización Panamericana de la Salud (PAHO/OPAS/OPS). A continuación se listan los archivos PDF evaluados, junto con el título identificado, el idioma principal, el número de páginas y una breve descripción del tipo de contenido. Estos documentos representan una muestra diversa de layouts institucionales: políticas, informes técnicos, guías metodológicas, perfiles de país y organigramas.
+
+| Archivo PDF | Título del documento | Idioma | Páginas | Tipo de contenido |
+|-------------|----------------------|--------|---------|-------------------|
+| `doc_02_link.1_politica-ingles-2030-english-final.pdf` | Policy on the Health Workforce 2030: Strengthening Human Resources for Health to Achieve Resilient Health Systems | Inglés | 40 | Política regional con capítulos estructurados y anexos |
+| `doc_03_link.1_01_9789275129708_eng.pdf` | The health workforce in the Americas: Regional data and indicators | Inglés | 84 | Informe estadístico extenso con múltiples tablas y figuras |
+| `doc_04_link.1_sub1_01_guatemala.pdf` | Human resources for health: Country Profile — Guatemala | Inglés | 1 | Perfil de país de una sola página con tabla resumida |
+| `doc_05_link.1_iris3_01_9789275129791_eng.pdf` | Interprofessional health teams for integrated care | Inglés | 40 | Publicación técnica sobre equipos interprofesionales de salud |
+| `doc_05_link.1_sub2_01_org-chart-may-20-2026.pdf` | Organizational Chart of the Pan American Sanitary Bureau | Inglés | 1 | Organigrama institucional con estructura jerárquica |
+| `doc_06_link_01_OPSHSSHR250010_spa.pdf` | Mapeo de actores y diálogo estratégico para la gobernanza de los sistemas de información de recursos humanos para la salud | Español | 70 | Guía técnica sobre gobernanza de sistemas de información |
+| `doc_07_link_01_OPSHSSHR250007_spa.pdf` | Mapeo de ocupaciones de salud: Una metodología para su aplicación en la Región de las Américas | Español | 38 | Metodología para clasificación de ocupaciones de salud |
+| `doc_08_link_01_OPSHSSHR250009_spa.pdf` | Guía conceptual para el desarrollo de sistemas de información de recursos humanos para la salud | Español | 53 | Guía conceptual con marcos teóricos y ejemplos |
+| `doc_09_link_01_OPSHSSHR250008_spa.pdf` | Evaluación de la madurez de los sistemas de información de recursos humanos para la salud | Español | 62 | Instrumento y guía de evaluación de madurez |
+| `doc_18_link.2_01_9789275720035_por.pdf` | Ampliação do papel dos enfermeiros na atenção primária à saúde | Portugués | 54 | Publicación sobre enfermería en atención primaria |
+
+### Características del corpus de prueba
+
+En total, el corpus suma **463 páginas** distribuidas en tres idiomas: inglés (5 documentos), español (4 documentos) y portugués (1 documento). Los documentos en inglés cubren principalmente políticas regionales, datos estadísticos regionales y publicaciones técnicas. Los documentos en español forman parte de la serie de fortalecimiento de sistemas de información de recursos humanos para la salud en las Américas. El documento en portugués representa una publicación específica sobre el papel de la enfermería en Brasil y la Región.
+
+La selección buscaba representar la variedad de desafíos que `pdfstruct` debe enfrentar:
+
+- **Tablas densas y extensas**: especialmente en `doc_03`, que contiene decenas de tablas y figuras estadísticas.
+- **Layouts complejos**: `doc_03` incluye capítulos, anexos, perfiles de país y contenido en dos columnas.
+- **Documentos cortos o de una sola página**: `doc_04` y el organigrama de `doc_05_sub2` permiten evaluar la robustez en casos límite.
+- **Figuras y organigramas**: `doc_05_sub2` es un caso puro de figura estructural con texto incrustado.
+- **Multilingüismo**: los documentos en español y portugués permitieron probar el comportamiento del extractor con acentos, caracteres latinos y estructuras lingüísticas distintas al inglés.
+
+### Resultados de extracción disponibles
+
+Los resultados de las extracciones base (`soft`) y con GLM-OCR página completa (`hard`) se encuentran en el directorio `resultados4/`:
+
+- `resultados4/markdown/`: resultados del modo base con PyMuPDF4LLM.
+- `resultados4/markdown_glm_ocr/`: resultados del modo GLM-OCR página completa.
+- `resultados4/imagenes/`: imágenes extraídas en modo base.
+- `resultados4/imagenes_glm_ocr/`: imágenes extraídas con GLM-OCR.
+- `resultados4/metadata.json`: metadata completa de cada extracción, incluyendo tiempos, extractores, cantidad de imágenes y advertencias de validación cruzada.
+- `resultados4/resumen.md`: resumen tabular de las 20 extracciones realizadas (10 documentos × 2 modos).
+
+### Uso como referencia de prueba
+
+Estos 10 documentos constituyen el banco de pruebas principal de `pdfstruct` para validar regresiones y comparar mejoras entre versiones. Cuando se evalúa una nueva estrategia de extracción, como el modo `hybrid`, se recomienda comenzar por un subconjunto representativo de páginas de `doc_03`, dado que es el documento con mayor densidad de tablas, figuras y variaciones de layout. El prototipo híbrido, por ejemplo, se validó inicialmente sobre 10 páginas seleccionadas de `doc_03` antes de generalizarse a todo el pipeline de producción.
+
+### Nota sobre precisión de datos numéricos
+
+Aunque `pdfstruct` utiliza modelos de visión como GLM-OCR para mejorar la extracción de tablas y figuras, es importante recordar que estos modelos son probabilísticos. La probabilidad de error en la obtención de datos numéricos siempre existe, especialmente en tablas pequeñas, cifras con decimales o símbolos particulares. Por esta razón, los resultados numéricos obtenidos con modos `hard` e `hybrid` deben considerarse enriquecidos pero no infalibles, y se recomienda verificación humana cuando los datos sean utilizados para análisis críticos o toma de decisiones.
+
+`pdfstruct` está en mejora continua. Cada nueva versión busca reducir estos errores, mejorar la precisión numérica, ampliar la cobertura de figuras vectoriales y optimizar los tiempos de inferencia, manteniendo siempre una arquitectura modular y reproducible.
