@@ -39,6 +39,7 @@ class OllamaGlmOcrClient:
         self,
         prompt: str,
         image_path: str | Path | None = None,
+        options: dict | None = None,
     ) -> str:
         """
         Envía un prompt opcionalmente acompañado de una imagen a Ollama.
@@ -47,6 +48,7 @@ class OllamaGlmOcrClient:
             prompt: Instrucción para el modelo.
             image_path: Ruta a una imagen (PNG/JPG). Si es None, se envía
                 solo texto.
+            options: Opciones adicionales para Ollama (ej. {"num_predict": 4096}).
 
         Returns:
             Texto generado por el modelo.
@@ -56,6 +58,9 @@ class OllamaGlmOcrClient:
             "prompt": prompt,
             "stream": False,
         }
+
+        if options:
+            payload["options"] = options
 
         if image_path is not None:
             payload["images"] = [self._encode_image(image_path)]

@@ -10,7 +10,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Callable, Literal, Optional, TYPE_CHECKING
 
-from .config import Config, GlmOcrConfig
+from .config import Config, GlmOcrConfig, HybridConfig
 from .exceptions import FileError
 
 if TYPE_CHECKING:
@@ -39,16 +39,19 @@ class PdfStruct:
     Modos de operación:
         - ``soft`` (default): extracción rápida con PyMuPDF4LLM, sin OCR
           enrichment.
-        - ``hard``: extracción con GLM-OCR via Ollama para mayor precisión en
-          tablas y figuras. Requiere Ollama.
+        - ``hard``: extracción con GLM-OCR via Ollama página completa. Requiere
+          Ollama.
+        - ``hybrid``: detección de layout con YOLOv8-doclaynet + PyMuPDF +
+          GLM-OCR por regiones. Requiere Ollama y dependencias ``[hybrid]``.
     """
 
     def __init__(
         self,
         images_output_dir: str | None = None,
         glm_ocr_config: GlmOcrConfig | None = None,
+        hybrid_config: HybridConfig | None = None,
         config_path: str | Path | None = None,
-        mode: Literal["soft", "hard"] | None = None,
+        mode: Literal["soft", "hard", "hybrid"] | None = None,
     ):
         from .document import DocumentProcessor
         from .pdf import PDFProcessor
@@ -62,18 +65,24 @@ class PdfStruct:
             else str(config.images_output_dir)
         )
 
+        self.mode = mode or "soft"
+
         if glm_ocr_config is not None:
             self.glm_ocr_config = glm_ocr_config
-        elif mode == "hard":
+        elif mode in ("hard", "hybrid"):
             self.glm_ocr_config = GlmOcrConfig(enabled=True)
         elif mode == "soft":
             self.glm_ocr_config = GlmOcrConfig(enabled=False)
         else:
             self.glm_ocr_config = config.glm_ocr
 
+        self.hybrid_config = hybrid_config if hybrid_config is not None else config.hybrid
+
         self.pdf_processor = PDFProcessor(
             images_output_dir=self.images_output_dir,
             glm_ocr_config=self.glm_ocr_config,
+            hybrid_config=self.hybrid_config,
+            mode=self.mode,
         )
         self.document_processor = DocumentProcessor()
 

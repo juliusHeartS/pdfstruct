@@ -41,6 +41,7 @@ class GlmOcrConfig:
         images_dir: Directorio base donde guardar las figuras extraídas.
         table_prompt: Prompt para extraer tablas.
         figure_prompt: Prompt para describir figuras.
+        options: Opciones adicionales para el endpoint /api/generate de Ollama.
     """
 
     enabled: bool = False
@@ -57,6 +58,7 @@ class GlmOcrConfig:
         "Describe esta imagen de un documento de forma concisa. "
         "Devuelve solo una leyenda o descripción breve en una sola línea."
     )
+    options: dict[str, Any] = field(default_factory=dict)
 
     @property
     def generate_url(self) -> str:
@@ -148,6 +150,124 @@ class GlmOcrConfig:
         if figure_prompt is not None:
             settings["figure_prompt"] = figure_prompt
 
+        # Aplicar options si viene de YAML o argumento explícito.
+        env_options = os.getenv("PDFSTRUCT_GLM_OCR_OPTIONS") or os.getenv("GLM_OCR_OPTIONS")
+        if env_options is not None:
+            try:
+                import json
+                settings["options"] = json.loads(env_options)
+            except Exception:
+                pass
+
+        return cls(**settings)
+
+
+@dataclass
+class HybridConfig:
+    """
+    Configuración para el modo híbrido (YOLO + GLM-OCR).
+
+    Attributes:
+        yolo_model_path: Ruta local al modelo YOLO. Si es None, se descarga
+            el modelo doclaynet desde Hugging Face.
+        dpi: Resolución de renderizado de páginas para YOLO.
+        target_labels: Etiquetas de layout a enriquecer.
+        conf_threshold: Confianza mínima de detección YOLO.
+        iou_threshold: Umbral IOU de supresión no máxima YOLO.
+        table_split_height_ratio: Si una tabla supera esta fracción de la
+            página, se divide horizontalmente.
+        dense_split_min_lines: Si una tabla tiene más líneas de texto que
+            este valor, también se divide.
+        max_chunk_height_ratio: Altura máxima de cada chunk de tabla.
+        header_ratio: Fracción superior de la tabla considerada encabezado.
+        overlap_ratio: Solapamiento entre chunks de tabla.
+    """
+
+    yolo_model_path: str | None = None
+    dpi: int = 200
+    target_labels: set[str] = field(default_factory=lambda: {"Table", "Picture"})
+    conf_threshold: float = 0.25
+    iou_threshold: float = 0.7
+    table_split_height_ratio: float = 0.75
+    dense_split_min_lines: int = 50
+    max_chunk_height_ratio: float = 0.45
+    header_ratio: float = 0.12
+    overlap_ratio: float = 0.08
+
+    @classmethod
+    def from_settings(
+        cls,
+        yolo_model_path: str | None = None,
+        dpi: int | None = None,
+        target_labels: set[str] | None = None,
+        conf_threshold: float | None = None,
+        iou_threshold: float | None = None,
+        table_split_height_ratio: float | None = None,
+        dense_split_min_lines: int | None = None,
+        max_chunk_height_ratio: float | None = None,
+        header_ratio: float | None = None,
+        overlap_ratio: float | None = None,
+        yaml_data: dict[str, Any] | None = None,
+    ) -> "HybridConfig":
+        """Combina argumentos, YAML y valores por defecto."""
+        yaml_data = yaml_data or {}
+        defaults = cls()
+
+        settings: dict[str, Any] = {
+            "yolo_model_path": defaults.yolo_model_path,
+            "dpi": defaults.dpi,
+            "target_labels": defaults.target_labels,
+            "conf_threshold": defaults.conf_threshold,
+            "iou_threshold": defaults.iou_threshold,
+            "table_split_height_ratio": defaults.table_split_height_ratio,
+            "dense_split_min_lines": defaults.dense_split_min_lines,
+            "max_chunk_height_ratio": defaults.max_chunk_height_ratio,
+            "header_ratio": defaults.header_ratio,
+            "overlap_ratio": defaults.overlap_ratio,
+        }
+
+        if "hybrid" in yaml_data:
+            settings.update(yaml_data["hybrid"])
+
+        # Variables de entorno
+        env_path = os.getenv("PDFSTRUCT_HYBRID_YOLO_MODEL_PATH")
+        if env_path is not None:
+            settings["yolo_model_path"] = env_path
+
+        env_dpi = os.getenv("PDFSTRUCT_HYBRID_DPI")
+        if env_dpi is not None:
+            settings["dpi"] = int(env_dpi)
+
+        env_conf = os.getenv("PDFSTRUCT_HYBRID_CONF_THRESHOLD")
+        if env_conf is not None:
+            settings["conf_threshold"] = float(env_conf)
+
+        env_iou = os.getenv("PDFSTRUCT_HYBRID_IOU_THRESHOLD")
+        if env_iou is not None:
+            settings["iou_threshold"] = float(env_iou)
+
+        # Argumentos explícitos
+        if yolo_model_path is not None:
+            settings["yolo_model_path"] = yolo_model_path
+        if dpi is not None:
+            settings["dpi"] = dpi
+        if target_labels is not None:
+            settings["target_labels"] = target_labels
+        if conf_threshold is not None:
+            settings["conf_threshold"] = conf_threshold
+        if iou_threshold is not None:
+            settings["iou_threshold"] = iou_threshold
+        if table_split_height_ratio is not None:
+            settings["table_split_height_ratio"] = table_split_height_ratio
+        if dense_split_min_lines is not None:
+            settings["dense_split_min_lines"] = dense_split_min_lines
+        if max_chunk_height_ratio is not None:
+            settings["max_chunk_height_ratio"] = max_chunk_height_ratio
+        if header_ratio is not None:
+            settings["header_ratio"] = header_ratio
+        if overlap_ratio is not None:
+            settings["overlap_ratio"] = overlap_ratio
+
         return cls(**settings)
 
 
@@ -159,10 +279,12 @@ class Config:
     Attributes:
         images_output_dir: Directorio base para guardar imágenes extraídas.
         glm_ocr: Configuración de GLM-OCR via Ollama.
+        hybrid: Configuración del modo híbrido (YOLO + GLM-OCR).
     """
 
     images_output_dir: Path = _DEFAULT_IMAGES_DIR
     glm_ocr: GlmOcrConfig = field(default_factory=GlmOcrConfig)
+    hybrid: HybridConfig = field(default_factory=HybridConfig)
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "Config":
@@ -175,6 +297,7 @@ class Config:
             data = yaml.safe_load(f) or {}
 
         glm_ocr = GlmOcrConfig.from_settings(yaml_data=data)
+        hybrid = HybridConfig.from_settings(yaml_data=data)
 
         images_output_dir = data.get("images_output_dir", _DEFAULT_IMAGES_DIR)
         env_images_dir = os.getenv("PDFSTRUCT_IMAGES_OUTPUT_DIR")
@@ -184,6 +307,7 @@ class Config:
         return cls(
             images_output_dir=Path(images_output_dir),
             glm_ocr=glm_ocr,
+            hybrid=hybrid,
         )
 
     @classmethod

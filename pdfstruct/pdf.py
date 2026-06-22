@@ -11,12 +11,13 @@ import logging
 from pathlib import Path
 from typing import Any, Callable
 
-from .config import GlmOcrConfig
+from .config import GlmOcrConfig, HybridConfig
 from .core import ExtractionResult
 from .exceptions import ConfigurationError, ExtractionError, FileError
 from .extractors.markitdown_extractor import MarkItDownExtractor
 from .extractors.pymupdf4llm_extractor import PyMuPDF4LLMExtractor
 from .enrichers.cross_validator import CrossValidator
+from .enrichers.hybrid_enricher import HybridEnricher
 from .enrichers.ollama_enricher import OllamaEnricher
 from .enrichers.table_post_processor import TablePostProcessor
 from .utils import clean_ocr_garbage, normalize_text
@@ -30,35 +31,63 @@ class PDFProcessor:
     """
     Procesador especializado para PDFs.
 
-    Utiliza PyMuPDF4LLM como extractor principal por defecto. Cuando se
-    configura GLM-OCR via Ollama, detecta tablas y figuras con PyMuPDF y
-    las enriquece con el modelo GLM-OCR. Incluye validación cruzada y
-    reparación de tablas.
+    Utiliza PyMuPDF4LLM como extractor principal por defecto. Soporta tres
+    modos de enriquecimiento:
+
+    - ``soft``: solo PyMuPDF4LLM, sin OCR.
+    - ``hard``: GLM-OCR página completa via Ollama.
+    - ``hybrid``: YOLOv8-doclaynet + PyMuPDF + GLM-OCR por regiones.
+
+    Incluye validación cruzada y reparación de tablas.
     """
 
     def __init__(
         self,
         images_output_dir: str = "pdf_images",
         glm_ocr_config: GlmOcrConfig | None = None,
+        hybrid_config: HybridConfig | None = None,
+        mode: str = "soft",
     ):
         self.extractor_name = "pymupdf4llm"
         self.glm_ocr_config = glm_ocr_config or GlmOcrConfig()
+        self.hybrid_config = hybrid_config or HybridConfig()
+        self.mode = mode
         self.pymupdf_extractor = PyMuPDF4LLMExtractor()
         self.ollama_enricher: OllamaEnricher | None = None
+        self.hybrid_enricher: HybridEnricher | None = None
         self.markitdown_extractor = MarkItDownExtractor()
         self.cross_validator = CrossValidator()
         self.table_post_processor = TablePostProcessor()
         self.images_output_dir = Path(images_output_dir)
 
+        if self.mode == "hard" and not self.glm_ocr_config.enabled:
+            self.glm_ocr_config.enabled = True
+
+        if self.mode in ("hard", "hybrid") and not self.glm_ocr_config.enabled:
+            self.glm_ocr_config.enabled = True
+
         if self.glm_ocr_config.enabled:
-            self.ollama_enricher = OllamaEnricher(self.glm_ocr_config)
-            if not self.ollama_enricher.client.is_available():
-                raise ConfigurationError(
-                    f"GLM-OCR está habilitado pero Ollama no responde en "
-                    f"{self.glm_ocr_config.url}. "
-                    f"Asegúrate de que 'ollama serve' esté corriendo y el modelo "
-                    f"'{self.glm_ocr_config.model}' esté disponible."
+            if self.mode == "hybrid":
+                self.hybrid_enricher = HybridEnricher(
+                    self.glm_ocr_config,
+                    self.hybrid_config,
                 )
+                if not self.hybrid_enricher.client.is_available():
+                    raise ConfigurationError(
+                        f"GLM-OCR está habilitado pero Ollama no responde en "
+                        f"{self.glm_ocr_config.url}. "
+                        f"Asegúrate de que 'ollama serve' esté corriendo y el modelo "
+                        f"'{self.glm_ocr_config.model}' esté disponible."
+                    )
+            else:
+                self.ollama_enricher = OllamaEnricher(self.glm_ocr_config)
+                if not self.ollama_enricher.client.is_available():
+                    raise ConfigurationError(
+                        f"GLM-OCR está habilitado pero Ollama no responde en "
+                        f"{self.glm_ocr_config.url}. "
+                        f"Asegúrate de que 'ollama serve' esté corriendo y el modelo "
+                        f"'{self.glm_ocr_config.model}' esté disponible."
+                    )
 
     def extract(
         self,
@@ -126,7 +155,27 @@ class PDFProcessor:
 
         # Enriquecimiento opcional con GLM-OCR via Ollama.
         images_dir: Path | None = None
-        if self.ollama_enricher is not None:
+        if self.hybrid_enricher is not None:
+            images_dir = self.images_output_dir / pdf_path.stem
+            images_dir.mkdir(parents=True, exist_ok=True)
+            logger.info("Enriqueciendo con pipeline híbrido: %s", pdf_path)
+            markdown_content, page_count, element_count = self.hybrid_enricher.enrich(
+                pdf_path,
+                page_chunks,
+                images_dir=images_dir,
+                output_dir=output_dir,
+                filename_prefix=pdf_path.stem,
+                progress_callback=progress_callback,
+            )
+            metadata["ollama_pages_processed"] = page_count
+            metadata["hybrid_elements_processed"] = element_count
+            metadata["extractor"] = "hybrid"
+            logger.info(
+                "Pipeline híbrido procesó %d páginas y %d elementos",
+                page_count,
+                element_count,
+            )
+        elif self.ollama_enricher is not None:
             images_dir = self.images_output_dir / pdf_path.stem
             images_dir.mkdir(parents=True, exist_ok=True)
             logger.info("Enriqueciendo con GLM-OCR: %s", pdf_path)

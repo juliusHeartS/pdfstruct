@@ -21,6 +21,11 @@ dev = [
     "build>=1.0.0",
     "ruff>=0.4.0",
 ]
+hybrid = [
+    "ultralytics>=8.0.0",
+    "huggingface_hub>=0.20.0",
+    "Pillow>=10.0.0",
+]
 
 [project.scripts]
 pdfstruct = "pdfstruct.cli:app"

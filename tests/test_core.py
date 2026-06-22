@@ -127,6 +127,21 @@ def test_mode_hard_requires_ollama(tmp_path: Path):
         assert "Ollama no responde" in str(exc)
 
 
+def test_mode_hybrid_requires_ollama(tmp_path: Path):
+    pdf_path = tmp_path / "test.pdf"
+    _create_test_pdf(pdf_path, num_pages=1)
+
+    try:
+        PdfStruct(
+            images_output_dir=str(tmp_path / "images"),
+            mode="hybrid",
+            glm_ocr_config=GlmOcrConfig(enabled=True, url="http://localhost:99999"),
+        )
+        assert False, "Debería haber lanzado ConfigurationError"
+    except ConfigurationError as exc:
+        assert "Ollama no responde" in str(exc)
+
+
 def test_progress_callback_is_called(tmp_path: Path):
     pdf_path = tmp_path / "test.pdf"
     _create_test_pdf(pdf_path, num_pages=2)

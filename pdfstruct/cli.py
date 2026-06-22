@@ -53,7 +53,7 @@ def extract(
     mode: str = typer.Option(
         "soft",
         "--mode",
-        help="Modo de extracción: 'soft' (rápido, sin OCR) o 'hard' (GLM-OCR)",
+        help="Modo de extracción: 'soft', 'hard' (GLM-OCR página completa) o 'hybrid' (YOLO + GLM-OCR por regiones)",
     ),
     progress_flag: bool = typer.Option(
         False,
@@ -78,9 +78,9 @@ def extract(
     """
     Extrae un documento a Markdown usando el extractor más adecuado.
     """
-    if mode not in ("soft", "hard"):
+    if mode not in ("soft", "hard", "hybrid"):
         console.print(
-            f"[red]Error:[/red] --mode debe ser 'soft' o 'hard', se recibió '{mode}'"
+            f"[red]Error:[/red] --mode debe ser 'soft', 'hard' o 'hybrid', se recibió '{mode}'"
         )
         raise typer.Exit(code=1)
 
@@ -88,7 +88,7 @@ def extract(
     console.print(f"[bold blue]Modo:[/bold blue] {mode}")
 
     enabled = _bool_option(glm_ocr_enabled)
-    if mode == "hard":
+    if mode in ("hard", "hybrid"):
         enabled = True
     elif mode == "soft":
         enabled = False
@@ -113,7 +113,7 @@ def extract(
         output = Path(output)
 
         progress_callback: Optional[ProgressCallback] = None
-        if progress_flag and mode == "hard":
+        if progress_flag and mode in ("hard", "hybrid"):
             with Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
