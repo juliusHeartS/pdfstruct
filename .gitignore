@@ -26,3 +26,15 @@ pdf_images/
 # Distribución
 build/
 dist/
+
+# Directorios de investigación y prototipos
+/pdf_oxide/
+/PdfStruct_Rust/
+/PdfStruct_Rust/target/
+/PdfStruct_Rust/Cargo.lock
+
+# Modelos y archivos grandes
+*.onnx
+*.pt
+*.pth
+*.safetensors
